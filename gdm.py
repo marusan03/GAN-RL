@@ -49,7 +49,7 @@ class GDM():
     def get_state(self, state, action):
         predict_state = self.sess.run(self.predict_state, feed_dict={
             self.pre_state: state, self.action: action, self.is_training: False})
-        return np.concatenate([state, predict_state], axis=3)
+        return np.concatenate([state, predict_state], axis=self.concat_dim)
 
     def train(self, pre_state, action, post_state, iteration=5):
         # train gdm
