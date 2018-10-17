@@ -34,7 +34,7 @@ class Agent():
         with tf.variable_scope('target_network'):
             self.target_q_values = self.build_model(self.s_t_plas_1)
         with tf.name_scope('update_target_q_network'):
-            self.update_target_q_network_op = self.update_target_q_network_op()
+            self.update_target_q_network_op = self.copy_weight()
         with tf.name_scope('dqn_op'):
             self.dqn_op, self.loss, self.dqn_summary = self.build_training_op()
 
@@ -63,17 +63,17 @@ class Agent():
 
         return q_value, loss, dqn_summary
 
-    def updated_target_q_network_op(self):
+    def copy_weight(self):
         dqn_weights = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn')
         target_q_network_weights = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
-        updated_target_q_network_op = [target_q_network_weights[i].assign(
+        update_target_q_network_op = [target_q_network_weights[i].assign(
             dqn_weights[i]) for i in range(len(dqn_weights))]
-        return updated_target_q_network_op
+        return update_target_q_network_op
 
     def updated_target_q_network(self):
-        self.sess.run(self.updated_target_q_network_op)
+        self.sess.run(self.update_target_q_network_op)
 
     def build_training_op(self):
         self.target_q_t = tf.placeholder(
