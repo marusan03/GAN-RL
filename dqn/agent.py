@@ -26,9 +26,9 @@ class Agent():
         self.data_format = self.config.cnn_format
 
         self.s_t = tf.placeholder(tf.float32, shape=(
-            None, self.screen_width, self.screen_height, self.history_length))
+            None, self.history_length, self.screen_width, self.screen_height))
         self.s_t_plas_1 = tf.placeholder(tf.float32, shape=(
-            None, self.screen_width, self.screen_height, self.history_length))
+            None, self.history_length, self.screen_width, self.screen_height))
 
         if self.data_format == 'NHWC':
             self.s_t = tf.transpose(
