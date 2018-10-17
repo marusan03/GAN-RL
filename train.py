@@ -115,7 +115,7 @@ def train(sess, config):
         memory.add(screen, reward, action, terminal)
 
         # Train
-        if step > 500:
+        if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
 
