@@ -124,12 +124,12 @@ class GDM():
             def create_action_tile(action_one_hot, shape, name='action_tile'):
                 if self.data_format == 'NCHW':
                     action_one_hot = tf.reshape(
-                        action_one_hot, [1, self.num_actions*self.lookahead, 1, 1])
+                        action_one_hot, [-1, self.num_actions*self.lookahead, 1, 1])
                     action_tile = tf.tile(
                         action_one_hot, [1, 1, shape[2], shape[3]], name=name)
                 else:
                     action_one_hot = tf.reshape(
-                        action_one_hot, [1, 1, 1, self.num_actions*self.lookahead])
+                        action_one_hot, [-1, 1, 1, self.num_actions*self.lookahead])
                     action_tile = tf.tile(
                         action_one_hot, [1, shape[1], shape[2], 1], name=name)
                 return action_tile
