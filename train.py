@@ -92,7 +92,7 @@ def train(sess, config):
                 history_state = history.get()
                 for j in range(env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
-                    q_value = agent.get_q_value(predict_state[..., 1:5])
+                    q_value = agent.get_q_value(predict_state[:, 1:5, ...])
                     if max_q_value < np.max(q_value):
                         action_sequence.insert(0, j)
                         action_sequence.insert(1, np.argmax(q_value))
@@ -132,7 +132,7 @@ def train(sess, config):
             if config.gats and step % config.gdm_train_frequency == 0:
                 gdm.summary, disc_summary = gdm.train(
                     s_t, np.reshape(
-                        action_batch, [-1, 1]), np.reshape(s_t_plus_1[..., 0], [-1, 84, 84, 1]))
+                        action_batch, [-1, 1]), np.reshape(s_t_plus_1[..., 0], [-1, 1, 84, 84]))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 

@@ -24,13 +24,14 @@ class GDM():
             tf.int32, shape=[None, self.lookahead], name='actions')
         self.is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
+        self.concat_dim = 1
         self.pre_state = tf.placeholder(
             tf.float32, shape=[None, self.history_length, self.state_width, self.state_height], name='pre_state')
-
         self.post_state = tf.placeholder(
             tf.float32, shape=[None, self.lookahead, self.state_width, self.state_height], name='post_state')
 
         if self.data_format == 'NHWC':
+            self.concat_dim = 3
             self.pre_state = tf.transpose(
                 self.pre_state, (0, 2, 3, 1), name='NCHW_to_NHWC')
             self.post_state = tf.transpose(
@@ -117,11 +118,6 @@ class GDM():
 
         with tf.variable_scope('Decoder'):
 
-            concat_dim = 1
-
-            if self.data_format == 'NHWC':
-                concat_dim = 3
-
             action_one_hot = tf.one_hot(
                 action, self.num_actions, name='action_one_hot')
 
@@ -141,7 +137,7 @@ class GDM():
             action_tile1 = create_action_tile(
                 action_one_hot, encode6.shape, name='AT1')
             concat1 = tf.concat(
-                [encode6, action_tile1], concat_dim, name='concat1')
+                [encode6, action_tile1], self.concat_dim, name='concat1')
             decode1 = lib.nn.deconv2d.Deconv2D(
                 'Deconv1', ngf * 8 + self.num_actions*self.lookahead, ngf * 8, 3, concat1, weight_norm_scale=1e-3, stride=1, padding_size=1, data_format=self.data_format)
             decode1 = tf.layers.batch_normalization(
@@ -152,7 +148,7 @@ class GDM():
             action_tile2 = create_action_tile(
                 action_one_hot, decode1.shape, name='AT2')
             concat2 = tf.concat(
-                [encode5, decode1, action_tile2], concat_dim, name='concat2')
+                [encode5, decode1, action_tile2], self.concat_dim, name='concat2')
             decode2 = lib.nn.deconv2d.Deconv2D(
                 'Deconv2', ngf*8*2+self.num_actions*self.lookahead, ngf*8, 3, concat2, weight_norm_scale=1e-3, stride=1, padding_size=1, data_format=self.data_format)
             decode2 = tf.layers.batch_normalization(
@@ -163,7 +159,7 @@ class GDM():
             action_tile3 = create_action_tile(
                 action_one_hot, decode2.shape, name='AT3')
             concat3 = tf.concat(
-                [encode4, decode2, action_tile3], concat_dim, name='concat3')
+                [encode4, decode2, action_tile3], self.concat_dim, name='concat3')
             decode3 = lib.nn.deconv2d.Deconv2D(
                 'Deconv3', ngf*8*2+self.num_actions*self.lookahead, ngf*4, 4, concat3, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             decode3 = tf.layers.batch_normalization(
@@ -174,7 +170,7 @@ class GDM():
             action_tile4 = create_action_tile(
                 action_one_hot, decode3.shape, name='AT4')
             concat4 = tf.concat(
-                [encode3, decode3, action_tile4], concat_dim, name='concat4')
+                [encode3, decode3, action_tile4], self.concat_dim, name='concat4')
             decode4 = lib.nn.deconv2d.Deconv2D(
                 'Deconv4', ngf*4*2+self.num_actions*self.lookahead, ngf*2, 4, concat4, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             decode4 = tf.layers.batch_normalization(
@@ -185,7 +181,7 @@ class GDM():
             action_tile5 = create_action_tile(
                 action_one_hot, decode4.shape, name='AT5')
             concat5 = tf.concat(
-                [encode2, decode4, action_tile5], concat_dim, name='concat5')
+                [encode2, decode4, action_tile5], self.concat_dim, name='concat5')
             decode5 = lib.nn.deconv2d.Deconv2D(
                 'Deconv5', ngf*2*2+self.num_actions*self.lookahead, ngf, 4, concat5, weight_norm_scale=1e-3, stride=2, padding='VALID', data_format=self.data_format)
             decode5 = tf.layers.batch_normalization(
@@ -196,7 +192,7 @@ class GDM():
             action_tile6 = create_action_tile(
                 action_one_hot, decode5.shape, name='AT6')
             concat6 = tf.concat(
-                [decode5, action_tile6], concat_dim, name='concat6')
+                [decode5, action_tile6], self.concat_dim, name='concat6')
             decode6 = lib.nn.deconv2d.Deconv2D(
                 'Deconv6', ngf+self.num_actions*self.lookahead, self.lookahead, 4, concat6, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             decode6 = tf.layers.batch_normalization(
@@ -267,9 +263,9 @@ class GDM():
     def build_training_op(self, pre_state, post_state, predict_state, action, is_training):
 
         real_state = tf.concat(
-            [pre_state, post_state], axis=3, name='real_state')
+            [pre_state, post_state], axis=self.concat_dim, name='real_state')
         fake_state = tf.concat(
-            [pre_state, predict_state], axis=3, name='fake_state')
+            [pre_state, predict_state], axis=self.concat_dim, name='fake_state')
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
