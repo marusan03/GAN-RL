@@ -63,7 +63,7 @@ def main(_):
         if not tf.test.is_gpu_available() and FLAGS.use_gpu:
             raise Exception("use_gpu flag is true when no GPUs are available")
 
-        if not FLAGS.use_gpu:
+        if FLAGS.use_gpu:
             config.cnn_format = 'NHWC'
 
         pp(config.__dict__)

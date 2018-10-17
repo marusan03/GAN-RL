@@ -58,7 +58,7 @@ def train(sess, config):
     # model load, if exist ckpt.
     load_model(sess, saver, checkpoint_dir)
 
-    agent.copy_weight()
+    agent.updated_target_q_network()
 
     writer = tf.summary.FileWriter(model_dir, sess.graph)
 
@@ -123,7 +123,7 @@ def train(sess, config):
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
 
                 if step % config.target_q_update_step == config.target_q_update_step - 1:
-                    agent.copy_weight()
+                    agent.updated_target_q_network()
 
                 writer.add_summary(dqn_summary, step)
                 total_loss += loss
