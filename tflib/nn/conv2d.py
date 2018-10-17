@@ -72,7 +72,7 @@ def Conv2D(
                     inputs, [[0, 0], [padding_size, padding_size], [padding_size, padding_size], [0, 0]])
             else:
                 inputs = tf.pad(
-                    inputs, [[0, 0], [padding_size, padding_size], [0, 0], [padding_size, padding_size]])
+                    inputs, [[0, 0], [0, 0], [padding_size, padding_size], [padding_size, padding_size]])
             padding = 'VALID'
 
         if spectral_norm:
