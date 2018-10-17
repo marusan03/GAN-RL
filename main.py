@@ -69,7 +69,7 @@ def main(_):
         if FLAGS.use_gpu:
             config.cnn_format = 'NCHW'
 
-        pp(config.__dict__['__flags'])
+        pp(config.__dict__)
 
         if FLAGS.is_train:
             train(sess, config)
