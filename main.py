@@ -67,7 +67,7 @@ def main(_):
             raise Exception("use_gpu flag is true when no GPUs are available")
 
         if FLAGS.use_gpu:
-            config.cnn_format = 'NHWC'
+            config.cnn_format = 'NCHW'
 
         pp(config.__dict__)
 

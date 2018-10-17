@@ -3,26 +3,6 @@ import tflib as lib
 import numpy as np
 import tensorflow as tf
 
-_default_weightnorm = False
-
-
-def enable_default_weightnorm():
-    global _default_weightnorm
-    _default_weightnorm = True
-
-
-_weights_stdev = None
-
-
-def set_weights_stdev(weights_stdev):
-    global _weights_stdev
-    _weights_stdev = weights_stdev
-
-
-def unset_weights_stdev():
-    global _weights_stdev
-    _weights_stdev = None
-
 
 def Deconv2D(
     name,
@@ -31,13 +11,12 @@ def Deconv2D(
     filter_size,
     inputs,
     he_init=True,
-    mask_type=None,
     stride=2,
     weight_norm_scale=0.,
     biases=True,
-    gain=1.,
     padding_size=0,
-    padding='SAME'
+    padding='SAME',
+    data_format='NCHW'
 
 ):
     """
@@ -45,9 +24,6 @@ def Deconv2D(
     returns: tensor of shape (batch size, 2*height, 2*width, output_dim)
     """
     with tf.variable_scope(name):
-
-        if mask_type != None:
-            raise Exception('Unsupported configuration')
 
         def uniform(stdev, size):
             return np.random.uniform(
@@ -64,18 +40,10 @@ def Deconv2D(
         else:  # Normalized init (Glorot & Bengio)
             filters_stdev = np.sqrt(6./(fan_in+fan_out))
 
-        if _weights_stdev is not None:
-            filter_values = uniform(
-                _weights_stdev,
-                (filter_size, filter_size, output_dim, input_dim)
-            )
-        else:
-            filter_values = uniform(
-                filters_stdev,
-                (filter_size, filter_size, output_dim, input_dim)
-            )
-
-        filter_values *= gain
+        filter_values = uniform(
+            filters_stdev,
+            (filter_size, filter_size, output_dim, input_dim)
+        )
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
@@ -85,31 +53,42 @@ def Deconv2D(
             'filters', initializer=filter_values, regularizer=regularizer)
 
         # calculated output dimension
-        input_shape = inputs.shape.as_list()
-        output_hgiht = (input_shape[1] - 1)*stride - \
-            2 * padding_size + filter_size
-        output_width = (input_shape[2] - 1)*stride - \
-            2 * padding_size + filter_size
-        output_shape = tf.stack(
-            [tf.shape(inputs)[0], output_hgiht, output_width, output_dim], name='output_shape')
+        if data_format == 'NHWC':
+            input_shape = inputs.shape.as_list()
+            output_hgiht = (input_shape[1] - 1)*stride - \
+                2 * padding_size + filter_size
+            output_width = (input_shape[2] - 1)*stride - \
+                2 * padding_size + filter_size
+            output_shape = tf.stack(
+                [tf.shape(inputs)[0], output_hgiht, output_width, output_dim], name='output_shape')
+        else:
+            input_shape = inputs.shape.as_list()
+            output_hgiht = (input_shape[2] - 1)*stride - \
+                2 * padding_size + filter_size
+            output_width = (input_shape[3] - 1)*stride - \
+                2 * padding_size + filter_size
+            output_shape = tf.stack(
+                [tf.shape(inputs)[0], output_dim, output_hgiht, output_width], name='output_shape')
 
-        # if padding_size > 0:
-        #     padding_size = filter_size - 1 - padding_size
-        #     inputs = tf.pad(
-        #         inputs, [[0, 0], [padding_size, padding_size], [padding_size, padding_size], [0, 0]])
-        #     padding = 'VALID'
+        # stride
+        strides = []
+        if data_format == 'NHWC':
+            strides = [1, stride, stride, 1]
+        else:
+            strides = [1, 1, stride, stride]
 
         result = tf.nn.conv2d_transpose(
             value=inputs,
             filter=filters,
             output_shape=output_shape,
-            strides=[1, stride, stride, 1],
-            padding=padding
+            strides=strides,
+            padding=padding,
+            data_format=data_format
         )
 
         if biases:
             _biases = tf.get_variable(
                 'biases', initializer=np.zeros(output_dim, dtype='float32'))
-            result = tf.nn.bias_add(result, _biases)
+            result = tf.nn.bias_add(result, _biases, data_format=data_format)
 
         return result
