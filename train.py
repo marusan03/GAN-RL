@@ -150,8 +150,8 @@ def train(sess, config):
 
         # calcurate infometion
         if step >= config.learn_start:
-            if step % config.test_step == config.test_step - 1:
-                avg_reward = total_reward / config.test_step
+            if step % config._test_step == config._test_step - 1:
+                avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
                 avg_q = total_q_value / update_count
 
