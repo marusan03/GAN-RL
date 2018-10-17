@@ -2,37 +2,37 @@
 
 
 # PROGRESS
-[ ] GDMのforward作成
-    [x] forwardの作成
-    [ ] loss関数の作成
-    [ ] test
+[x] GDMのforward作成  
+    [x] forwardの作成  
+    [x] loss関数の作成  
+    [x] test  
 
-[ ] Discriminator作成
-    [x] modelの作成
-    [ ] loss関数の作成
-    [ ] test
+[x] Discriminator作成
+    [x] modelの作成  
+    [x] loss関数の作成  
+    [x] test  
 
-[ ] Reward Predictor作成
-    [x] modelの作成
-    [ ] loss関数の作成
-    [ ] test
+[x] Reward Predictor作成  
+    [x] modelの作成  
+    [x] loss関数の作成  
+    [x] test  
 
-[ ] DQNの作成
-    [ ] forwardの作成
-    [ ] Repray Memoryの作成
-    [ ] target Q networkの作成
-    [ ] test
+[x] DQNの作成
+    [x] forwardの作成  
+    [x] Repray Memoryの作成  
+    [x] target Q networkの作成  
+    [x] test  
 
-[ ] OpenAI gymの作成
-    [ ] 環境はどうするか
-    [ ] トレーニング用に作成
+[x] OpenAI gymの作成
+    [x] 環境はどうするか  
+    [x] トレーニング用に作成  
 
-[ ] trainの作成
-    [ ] バッチノーマライゼーションの設定
-    [ ] それぞれの学習の設定
-    [ ] チェックポイントの作成
-        [ ] 各モデルごとに作成
-        [ ] 読み込みも
+[x] trainの作成
+    [x] バッチノーマライゼーションの設定  
+    [x] それぞれの学習の設定  
+    [x] チェックポイントの作成  
+        [x] 各モデルごとに作成  
+        [x] 読み込みも  
 
 [ ] testの作成
     [ ] チェックポイントの読み込み

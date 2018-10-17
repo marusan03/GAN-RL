@@ -23,11 +23,18 @@ class Agent():
         self.learning_rate = self.config.learning_rate
         self.learning_rate_decay_step = self.config.learning_rate_decay_step
         self.learning_rate_decay = self.config.learning_rate_decay
+        self.data_format = self.config.cnn_format
 
         self.s_t = tf.placeholder(tf.float32, shape=(
             None, self.screen_width, self.screen_height, self.history_length))
         self.s_t_plas_1 = tf.placeholder(tf.float32, shape=(
             None, self.screen_width, self.screen_height, self.history_length))
+
+        if self.data_format == 'NHWC':
+            self.s_t = tf.transpose(
+                self.s_t, (0, 2, 3, 1), name='NCHW_to_NHWC')
+            self.s_t_plas_1 = tf.transpose(
+                self.s_t_plas_1, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
         with tf.variable_scope('dqn'):
             self.q_value = self.build_model(self.s_t)
@@ -114,17 +121,17 @@ class Agent():
     def build_model(self, state):
 
         output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.1', 4, 32, 8, state, stride=4, padding='VALID')
+            'DQN_Conv.1', 4, 32, 8, state, stride=4, padding='VALID', data_format=self.data_format)
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.2', 32, 32 * 2, 4, output, stride=2, padding='VALID')
+            'DQN_Conv.2', 32, 32 * 2, 4, output, stride=2, padding='VALID', data_format=self.data_format)
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.3', 32 * 2, 32 * 2, 3, output, stride=1, padding='VALID')
+            'DQN_Conv.3', 32 * 2, 32 * 2, 3, output, stride=1, padding='VALID', data_format=self.data_format)
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 7, 7, 64)
 

@@ -70,7 +70,7 @@ def get_config(FLAGS):
         pass
 
     for key in FLAGS.flag_values_dict():
-        if key == 'gpu':
+        if key == 'use_gpu':
             if FLAGS[key].value == False:
                 config.cnn_format = 'NHWC'
             else:
