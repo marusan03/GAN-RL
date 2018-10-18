@@ -27,7 +27,7 @@ def train(sess, config):
         step_assign_op = step_op.assign(step_input)
 
     with tf.variable_scope('summary'):
-        scalar_summary_tags = ['average.reward', 'average.loss', 'average.q',
+        scalar_summary_tags = ['average.reward', 'average.loss', 'average.q value',
                                'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate']
 
         summary_placeholders = {}
