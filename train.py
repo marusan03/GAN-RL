@@ -90,8 +90,10 @@ def train(sess, config):
             if len(action_sequence) == 0:
                 history_state = history.get()
                 predict_state = gdm.get_state([history_state], [[0]])
-                max_q_value = np.max(agent.get_q_value(
-                    predict_state[:, 1:5, ...]))
+                q_value = agent.get_q_value(predict_state[:, 1:5, ...])
+                action_sequence.insert(0, 0)
+                action_sequence.insert(1, np.argmax(q_value))
+                max_q_value = np.max(q_value)
                 for j in range(1, env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
                     q_value = agent.get_q_value(predict_state[:, 1:5, ...])
