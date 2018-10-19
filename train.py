@@ -88,14 +88,17 @@ def train(sess, config):
             # GATS
             # とりあえずlookahead=1 の時のみ
             if len(action_sequence) == 0:
-                max_q_value = 0
+                predict_state = gdm.get_state([history_state], [[0]])
+                max_q_value = np.max(agent.get_q_value(
+                    predict_state[:, 1:5, ...]))
                 history_state = history.get()
-                for j in range(env.action_size):
+                for j in range(1, env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
                     q_value = agent.get_q_value(predict_state[:, 1:5, ...])
                     if max_q_value < np.max(q_value):
                         action_sequence.insert(0, j)
                         action_sequence.insert(1, np.argmax(q_value))
+                        max_q_value = np.max(q_value)
 
             action = action_sequence.popleft()
 
