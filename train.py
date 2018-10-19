@@ -88,10 +88,10 @@ def train(sess, config):
             # GATS
             # とりあえずlookahead=1 の時のみ
             if len(action_sequence) == 0:
+                history_state = history.get()
                 predict_state = gdm.get_state([history_state], [[0]])
                 max_q_value = np.max(agent.get_q_value(
                     predict_state[:, 1:5, ...]))
-                history_state = history.get()
                 for j in range(1, env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
                     q_value = agent.get_q_value(predict_state[:, 1:5, ...])
