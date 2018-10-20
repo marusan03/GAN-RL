@@ -3,7 +3,7 @@ class AgentConfig(object):
     display = False
 
     max_step = 5000 * scale
-    memory_size = 100 * scale
+    memory_size = 100 * scale // 10
 
     batch_size = 32
     random_start = 30
@@ -47,7 +47,7 @@ class EnvironmentConfig(object):
 class GDMConfig(object):
     lookahead = 1
     lamda = 10.
-    gdm_train_frequency = 16
+    gdm_train_frequency = 16 * 2
     gats = True
 
 
