@@ -106,9 +106,9 @@ def train(sess, config):
 
         else:
             # ε-greedy
-            epsiron = config.test_epsiron or (config.epsiron_end +
-                                              max(0., (config.epsiron_start - config.epsiron_end)
-                                                  * (config.epsiron_end_t - max(0., step - config.learn_start)) / config.epsiron_end_t))
+            epsiron = (config.epsiron_end +
+                       max(0., (config.epsiron_start - config.epsiron_end)
+                           * (config.epsiron_end_t - max(0., step - config.learn_start)) / config.epsiron_end_t))
             if random.random() < epsiron:
                 action = random.randrange(env.action_size)
             else:
