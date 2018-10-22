@@ -64,7 +64,7 @@ def train(sess, config):
 
     num_game, update_count, ep_reward = 0, 0, 0.
     total_reward, total_loss, total_q_value = 0., 0., 0.
-    max_avg_ep_reward = 0
+    max_avg_ep_reward = -100
     ep_rewards, actions = [], []
     action_sequence = deque([])
 
