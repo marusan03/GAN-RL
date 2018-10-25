@@ -37,7 +37,7 @@ class Agent():
                 self.s_t_plas_1, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
         with tf.variable_scope('dqn'):
-            self.q_value = self.build_model(self.s_t)
+            self.q_value, self.q_action = self.build_model(self.s_t)
         with tf.variable_scope('target_network'):
             self.target_q_values = self.build_model(self.s_t_plas_1)
         with tf.name_scope('update_target_q_network'):
@@ -46,8 +46,7 @@ class Agent():
             self.dqn_op, self.loss, self.dqn_summary = self.build_training_op()
 
     def get_action(self, state):
-        action = np.argmax(self.sess.run(self.q_value,
-                                         feed_dict={self.s_t: state}), axis=1)[0]
+        action = self.sess.run(self.q_action, feed_dict={self.s_t: state})[0]
         return action
 
     def get_q_value(self, state):
@@ -147,4 +146,6 @@ class Agent():
             'DQN_Dence.2', 512, self.num_actions, output)
         # (None, num_actions)
 
-        return q_value
+        q_action = tf.argmax(q_value, dimension=1)
+
+        return q_value, q_action
