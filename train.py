@@ -114,6 +114,8 @@ def train(sess, config):
             else:
                 action = agent.get_action([history.get()])
 
+            print(action)
+
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
         history.add(screen)
