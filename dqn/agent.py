@@ -146,6 +146,6 @@ class Agent():
             'DQN_Dence.2', 512, self.num_actions, output)
         # (None, num_actions)
 
-        q_action = tf.argmax(q_value, dimension=1)
+        q_action = tf.argmax(q_value, axis=1)
 
         return q_value, q_action
