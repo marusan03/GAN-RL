@@ -47,7 +47,7 @@ class Agent():
 
     def get_action(self, state):
         action = tf.argmax(self.sess.run(self.q_value,
-                                         feed_dict={self.s_t: state}))[0]
+                                         feed_dict={self.s_t: state}), axis=1)[0]
         return action
 
     def get_q_value(self, state):
