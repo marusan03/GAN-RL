@@ -113,8 +113,7 @@ def train(sess, config):
                 action = random.randrange(env.action_size)
             else:
                 action = agent.get_action([history.get()])
-
-            print(action)
+                print(action)
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
