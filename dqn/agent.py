@@ -39,7 +39,7 @@ class Agent():
         with tf.variable_scope('dqn'):
             self.q_value, self.q_action = self.build_model(self.s_t)
         with tf.variable_scope('target_network'):
-            self.target_q_values = self.build_model(self.s_t_plas_1)
+            self.target_q_value, _ = self.build_model(self.s_t_plas_1)
         with tf.name_scope('update_target_q_network'):
             self.update_target_q_network_op = self.copy_weight()
         with tf.name_scope('dqn_op'):
@@ -57,7 +57,7 @@ class Agent():
     def train(self, state, action, reward, next_state, terminal, step):
         terminal = np.array(terminal) + 0.
         max_q_t_plus_1 = np.max(self.sess.run(
-            self.target_q_values, feed_dict={self.s_t_plas_1: next_state}), axis=1)
+            self.target_q_value, feed_dict={self.s_t_plas_1: next_state}), axis=1)
 
         target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
 

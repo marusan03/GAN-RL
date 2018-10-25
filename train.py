@@ -106,10 +106,10 @@ def train(sess, config):
 
         else:
             # ε-greedy
-            epsiron = (config.epsilon_end +
+            epsilon = (config.epsilon_end +
                        max(0., (config.epsilon_start - config.epsilon_end)
                            * (config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t))
-            if random.random() < epsiron:
+            if random.random() < epsilon:
                 action = random.randrange(env.action_size)
             else:
                 action = agent.get_action([history.get()])
