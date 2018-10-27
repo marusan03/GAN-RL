@@ -123,6 +123,8 @@ def train(sess, config):
         if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
+                print(s_t.shape, action_batch.shape, reward_batch.shape,
+                      s_t_plus_1.shape, terminal_batch.shape)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
