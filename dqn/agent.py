@@ -119,6 +119,11 @@ class Agent():
 
     def build_model(self, state):
 
+        if self.data_format == 'NCHW':
+            data_format = 'channels_first'
+        else:
+            data_format = 'channels_last'
+
         initializer = tf.truncated_normal_initializer(0, 0.02)
 
         output = tf.layers.conv2d(
