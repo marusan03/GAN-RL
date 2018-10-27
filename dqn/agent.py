@@ -46,7 +46,7 @@ class Agent():
             self.dqn_op, self.loss, self.dqn_summary = self.build_training_op()
 
     def get_action(self, state):
-        action = self.sess.run(self.q_action, feed_dict={self.s_t: state})[0]
+        action = self.sess.run(self.q_action, feed_dict={self.s_t: state})
         return action
 
     def get_q_value(self, state):

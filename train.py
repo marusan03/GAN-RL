@@ -113,6 +113,9 @@ def train(sess, config):
                 action = random.randrange(env.action_size)
             else:
                 action = agent.get_action([history.get()])
+                q_value = agent.get_q_value([history.get()])
+                print(action)
+                print(q_value)
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
@@ -123,13 +126,12 @@ def train(sess, config):
         if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
-                print(s_t.shape, action_batch.shape, reward_batch.shape,
-                      s_t_plus_1.shape, terminal_batch.shape)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
 
                 if step % config.target_q_update_step == config.target_q_update_step - 1:
+                    print('[*] Updated target q network')
                     agent.updated_target_q_network()
 
                 writer.add_summary(dqn_summary, step)
