@@ -119,31 +119,35 @@ class Agent():
 
     def build_model(self, state):
 
-        output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.1', 4, 32, 8, state, stride=4, padding='VALID', data_format=self.data_format)
+        initializer = tf.truncated_normal_initializer(0, 0.02)
+
+        output = tf.layers.conv2d(
+            state, 32, 8, strides=4, padding='VALID', data_format=self.data_format, kernel_initializer=initializer, name='DQN_Conv.1')
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 20, 20, 32)
 
-        output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.2', 32, 32 * 2, 4, output, stride=2, padding='VALID', data_format=self.data_format)
+        output = tf.layers.conv2d(
+            output, 32 * 2, 4,  strides=2, padding='VALID', data_format=self.data_format, kernel_initializer=initializer, name='DQN_Conv.2')
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 9, 9, 64)
 
-        output = lib.nn.conv2d.Conv2D(
-            'DQN_Conv.3', 32 * 2, 32 * 2, 3, output, stride=1, padding='VALID', data_format=self.data_format)
+        output = tf.layers.conv2d(
+            output, 32 * 2, 3, strides=1, padding='VALID', data_format=self.data_format, kernel_initializer=initializer, name='DQN_Conv.3')
         output = tf.nn.leaky_relu(output, -0.1)
         # (None, 7, 7, 64)
 
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        output = lib.nn.linear.Linear(
-            'DQN_Dence.1', 3136, 512, output)
+        dence_initializer = tf.random_normal_initializer(stddev=0.02)
+
+        output = tf.layers.dense(
+            output, 512, kernel_initializer=dence_initializer, name='DQN_Dence.1')
         output = tf.nn.relu(output)
         # (None, 512)
 
-        q_value = lib.nn.linear.Linear(
-            'DQN_Dence.2', 512, self.num_actions, output)
+        q_value = tf.layers.dense(
+            output, self.num_actions, kernel_initializer=dence_initializer, name='DQN_Dence.2')
         # (None, num_actions)
 
         q_action = tf.argmax(q_value, axis=1)
