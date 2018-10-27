@@ -113,9 +113,6 @@ def train(sess, config):
                 action = random.randrange(env.action_size)
             else:
                 action = agent.get_action([history.get()])
-                q_value = agent.get_q_value([history.get()])
-                print(action)
-                print(q_value)
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
