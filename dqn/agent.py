@@ -127,18 +127,18 @@ class Agent():
         initializer = tf.truncated_normal_initializer(0, 0.02)
 
         output = tf.layers.conv2d(
-            state, 32, 8, strides=4, padding='VALID', data_format=data_format, kernel_initializer=initializer, name='DQN_Conv.1')
-        output = tf.nn.leaky_relu(output, -0.1)
+            state, 32, 8, strides=4, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.1')
+        output = tf.nn.relu(output)
         # (None, 20, 20, 32)
 
         output = tf.layers.conv2d(
-            output, 32 * 2, 4,  strides=2, padding='VALID', data_format=data_format, kernel_initializer=initializer, name='DQN_Conv.2')
-        output = tf.nn.leaky_relu(output, -0.1)
+            output, 32 * 2, 4,  strides=2, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.2')
+        output = tf.nn.relu(output)
         # (None, 9, 9, 64)
 
         output = tf.layers.conv2d(
-            output, 32 * 2, 3, strides=1, padding='VALID', data_format=data_format, kernel_initializer=initializer, name='DQN_Conv.3')
-        output = tf.nn.leaky_relu(output, -0.1)
+            output, 32 * 2, 3, strides=1, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.3')
+        output = tf.nn.relu(output)
         # (None, 7, 7, 64)
 
         output = tf.layers.flatten(output)
@@ -147,7 +147,7 @@ class Agent():
         dence_initializer = tf.random_normal_initializer(stddev=0.02)
 
         output = tf.layers.dense(
-            output, 512, kernel_initializer=dence_initializer, name='DQN_Dence.1')
+            output, 512, activation=tf.nn.relu, kernel_initializer=dence_initializer, name='DQN_Dence.1')
         output = tf.nn.relu(output)
         # (None, 512)
 
