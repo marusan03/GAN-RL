@@ -54,6 +54,18 @@ class Agent():
                                 feed_dict={self.s_t: state})
         return q_value
 
+    def copy_weight(self):
+        dqn_weights = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn')
+        target_q_network_weights = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
+        update_target_q_network_op = [target_q_network_weights[i].assign(
+            dqn_weights[i]) for i in range(len(dqn_weights))]
+        return update_target_q_network_op
+
+    def updated_target_q_network(self):
+        self.sess.run(self.update_target_q_network_op)
+
     def train(self, state, action, reward, next_state, terminal, step):
         terminal = np.array(terminal) + 0.
         max_q_t_plus_1 = np.max(self.sess.run(
@@ -67,19 +79,7 @@ class Agent():
             self.target_q_t: target_q_t,
             self.learning_rate_step: step})
 
-        return q_value, loss, dqn_summary
-
-    def copy_weight(self):
-        dqn_weights = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn')
-        target_q_network_weights = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
-        update_target_q_network_op = [target_q_network_weights[i].assign(
-            dqn_weights[i]) for i in range(len(dqn_weights))]
-        return update_target_q_network_op
-
-    def updated_target_q_network(self):
-        self.sess.run(self.update_target_q_network_op)
+        return q_value, loss, dqn_summarys
 
     def build_training_op(self):
         self.target_q_t = tf.placeholder(
@@ -88,7 +88,7 @@ class Agent():
             dtype=tf.uint8, shape=[None], name='action')
 
         action_one_hot = tf.one_hot(
-            self.action, self.num_actions, name='action_one_hot')
+            self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
         q_acted = tf.reduce_sum(self.q_value * action_one_hot,
                                 axis=1, name='q_acted')
 
