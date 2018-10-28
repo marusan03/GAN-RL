@@ -128,14 +128,14 @@ def train(sess, config):
                 q_t, loss, dqn_summary = agent.train(
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
 
+                writer.add_summary(dqn_summary, step)
+                total_loss += loss
+                total_q_value += q_t.mean()
+                update_count += 1
+
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 print('[*] Updated target q network')
                 agent.updated_target_q_network()
-
-            writer.add_summary(dqn_summary, step)
-            total_loss += loss
-            total_q_value += q_t.mean()
-            update_count += 1
 
             if config.gats and step % config.gdm_train_frequency == 0:
                 gdm.summary, disc_summary = gdm.train(
