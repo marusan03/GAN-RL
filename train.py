@@ -134,7 +134,6 @@ def train(sess, config):
                 update_count += 1
 
             if step % config.target_q_update_step == config.target_q_update_step - 1:
-                print('[*] Updated target q network')
                 agent.updated_target_q_network()
 
             if config.gats and step % config.gdm_train_frequency == 0:
