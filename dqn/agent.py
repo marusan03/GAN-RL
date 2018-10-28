@@ -79,7 +79,7 @@ class Agent():
             self.target_q_t: target_q_t,
             self.learning_rate_step: step})
 
-        return q_value, loss, dqn_summarys
+        return q_value, loss, dqn_summary
 
     def build_training_op(self):
         self.target_q_t = tf.placeholder(
