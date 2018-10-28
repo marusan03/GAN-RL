@@ -18,6 +18,7 @@ flags.DEFINE_boolean('dueling', False, 'Whether to use dueling deep q-network')
 flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
 
 # GDM
+flags.DEFINE_boolean('gats', True, 'Use GDM')
 flags.DEFINE_integer('lookahead', 1, 'The number of lookahead. int[1-4]')
 
 # Environment
