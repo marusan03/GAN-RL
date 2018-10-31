@@ -117,6 +117,7 @@ def train(sess, config):
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
+        reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
         memory.add(screen, reward, action, terminal)
 
