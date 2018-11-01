@@ -20,8 +20,8 @@ class History:
         self.history *= 0
 
     def get(self):
-        normalize(self.history)
+        history = normalize(self.history)
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.history, (1, 2, 0))
+            return np.transpose(history, (1, 2, 0))
         else:
-            return self.history
+            return history
