@@ -4,10 +4,6 @@ import tensorflow as tf
 import tensorflow.layers
 import numpy as np
 
-import tflib as lib
-import tflib.nn.linear
-import tflib.nn.conv2d
-
 
 class Agent():
 

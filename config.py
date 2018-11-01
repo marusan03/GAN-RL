@@ -3,7 +3,7 @@ class AgentConfig(object):
     display = False
 
     max_step = 5000 * scale
-    memory_size = 100 * scale // 10
+    memory_size = 100 * scale
 
     batch_size = 32
     random_start = 30
