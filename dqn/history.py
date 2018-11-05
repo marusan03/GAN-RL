@@ -1,5 +1,4 @@
 import numpy as np
-from .utils import normalize
 
 
 class History:
@@ -20,8 +19,7 @@ class History:
         self.history *= 0
 
     def get(self):
-        history = normalize(self.history)
         if self.cnn_format == 'NHWC':
-            return np.transpose(history, (1, 2, 0))
+            return np.transpose(self.history, (1, 2, 0))
         else:
-            return history
+            return self.history

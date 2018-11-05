@@ -1,7 +1,7 @@
 import gym
 import random
 import numpy as np
-from .utils import rgb2gray, imresize
+from .utils import rgb2gray, imresize, normalize
 
 
 class Environment(object):
@@ -42,7 +42,7 @@ class Environment(object):
 
     @ property
     def screen(self):
-        return imresize(rgb2gray(self._screen), self.dims)  # 正規化を別の場所に移動
+        return normalize(imresize(rgb2gray(self._screen), self.dims))
 
     @property
     def action_size(self):

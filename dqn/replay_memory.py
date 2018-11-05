@@ -5,7 +5,7 @@ import random
 import logging
 import numpy as np
 
-from .utils import normalize, save_npy, load_npy
+from .utils import save_npy, load_npy
 
 
 class ReplayMemory:
@@ -83,9 +83,6 @@ class ReplayMemory:
         actions = self.actions[indexes]
         rewards = self.rewards[indexes]
         terminals = self.terminals[indexes]
-
-        self.prestates = normalize(self.prestates)
-        self.poststates = normalize(self.poststates)
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.prestates, (0, 2, 3, 1)), actions, \
