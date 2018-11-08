@@ -126,12 +126,11 @@ def train(sess, config):
                 if gats_s_t == []:
                     gats_s_t = s_t
                     gats_action_batch = action_batch
-                    gats_s_t_plus_1 = gats_s_t_plus_1
+                    gats_s_t_plus_1 = s_t_plus_1
                 else:
                     gats_s_t = np.concatenate([gats_s_t, s_t], axis=0)
                     gats_action_batch = np.concatenate(
                         [gats_action_batch, action_batch], axis=0)
-                    print(gats_s_t_plus_1.shape, s_t_plus_1.shape)
                     gats_s_t_plus_1 = np.concatenate(
                         [gats_s_t_plus_1, s_t_plus_1], axis=0)
 
