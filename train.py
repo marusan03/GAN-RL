@@ -17,9 +17,10 @@ def train(sess, config):
 
     env = GymEnvironment(config)
 
-    model_dir = './log/{}_lookahead_{}'.format(
-        config.env_name, config.lookahead)
+    model_dir = './log/{}_lookahead_{}_gats_{}'.format(
+        config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints')
+    print('[*] checkpont_dir = {}'.format(checkpoint_dir))
 
     with tf.variable_scope('step'):
         step_op = tf.Variable(0, trainable=False, name='step')
@@ -52,6 +53,10 @@ def train(sess, config):
     agent = Agent(sess, config, num_actions=env.action_size)
     memory = ReplayMemory(config, model_dir)
     history = History(config)
+
+    gats_s_t = []
+    gats_action_batch = []
+    gats_s_t_plus_1 = []
 
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver(max_to_keep=30)
@@ -90,20 +95,12 @@ def train(sess, config):
             # とりあえずlookahead=1 の時のみ
             if len(action_sequence) == 0:
                 history_state = history.get()
-                predict_state = gdm.get_state([history_state], [[0]])
-                q_value = agent.get_q_value(predict_state[:, 1:5, ...])
-                action_sequence.insert(0, 0)
-                action_sequence.insert(1, np.argmax(q_value))
-                max_q_value = np.max(q_value)
-                for j in range(1, env.action_size):
+                for j in range(0, env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
                     q_value = agent.get_q_value(predict_state[:, 1:5, ...])
-                    if max_q_value < np.max(q_value):
-                        action_sequence.insert(0, j)
-                        action_sequence.insert(1, np.argmax(q_value))
+                    if j == 0 or max_q_value < np.max(q_value):
+                        action = j
                         max_q_value = np.max(q_value)
-
-            action = action_sequence.popleft()
 
         else:
             # ε-greedy
@@ -125,6 +122,11 @@ def train(sess, config):
         if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
+                gats_s_t = np.concatenate(gats_s_t, s_t, axis=0)
+                gats_action_batch = np.concatenate(
+                    gats_action_batch, action_batch, axis=0)
+                gats_s_t_plus_1 = np.concatenate(
+                    gats_s_t_plus_1, s_t_plus_1, axis=0)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
@@ -140,9 +142,13 @@ def train(sess, config):
             if config.gats and step % config.gdm_train_frequency == 0:
                 gdm.summary, disc_summary = gdm.train(
                     s_t, np.reshape(
-                        action_batch, [-1, 1]), np.reshape(s_t_plus_1[:, 3, ...], [-1, 1, 84, 84]))
+                        gats_action_batch, [-1, 1]), np.reshape(gats_s_t_plus_1[:, 3, ...], [-1, 1, 84, 84]))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
+
+                gats_s_t = []
+                gats_action_batch = []
+                gats_s_t_plus_1 = []
 
         # Reinit
         if terminal:
