@@ -1,7 +1,6 @@
 import os
 import random
 from tqdm import tqdm
-from collections import deque
 
 import tensorflow as tf
 import numpy as np
@@ -20,7 +19,7 @@ def train(sess, config):
     model_dir = './log/{}_lookahead_{}_gats_{}'.format(
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints')
-    print('[*] checkpont_dir = {}'.format(checkpoint_dir))
+    print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
 
     with tf.variable_scope('step'):
         step_op = tf.Variable(0, trainable=False, name='step')
@@ -72,7 +71,6 @@ def train(sess, config):
     total_reward, total_loss, total_q_value = 0., 0., 0.
     max_avg_ep_reward = -100
     ep_rewards, actions = [], []
-    action_sequence = deque([])
 
     screen, reward, action, terminal = env.new_random_game()
 
@@ -91,9 +89,12 @@ def train(sess, config):
 
         # Select action
         if config.gats:
-            # GATS
-            # とりあえずlookahead=1 の時のみ
-            if len(action_sequence) == 0:
+            if step < config.learn_start:
+                action = random.randrange(env.action_size)
+
+            else:
+                # GATS
+                # とりあえずlookahead=1 の時のみ
                 history_state = history.get()
                 for j in range(0, env.action_size):
                     predict_state = gdm.get_state([history_state], [[j]])
