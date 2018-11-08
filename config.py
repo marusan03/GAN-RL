@@ -47,7 +47,7 @@ class EnvironmentConfig(object):
 class GDMConfig(object):
     lookahead = 1
     lamda = 10.
-    gdm_train_frequency = 16 * 2
+    gdm_train_frequency = 16
     gats = True
 
 
