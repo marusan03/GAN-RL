@@ -123,7 +123,7 @@ def train(sess, config):
         if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
-                if gats_s_t == []:
+                if step % config.gdm_train_frequency == 1:
                     gats_s_t = s_t
                     gats_action_batch = action_batch
                     gats_s_t_plus_1 = s_t_plus_1
@@ -147,14 +147,10 @@ def train(sess, config):
 
             if config.gats and step % config.gdm_train_frequency == 0:
                 gdm.summary, disc_summary = gdm.train(
-                    s_t, np.reshape(
+                    gats_s_t, np.reshape(
                         gats_action_batch, [-1, 1]), np.reshape(gats_s_t_plus_1[:, 3, ...], [-1, 1, 84, 84]))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
-
-                gats_s_t = []
-                gats_action_batch = []
-                gats_s_t_plus_1 = []
 
         # Reinit
         if terminal:
