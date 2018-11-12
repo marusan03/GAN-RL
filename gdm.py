@@ -51,7 +51,7 @@ class GDM():
             self.pre_state: state, self.action: action, self.is_training: False})
         return np.concatenate([state, predict_state], axis=self.concat_dim)
 
-    def train(self, pre_state, action, post_state, iteration=5):
+    def train(self, pre_state, action, post_state, iteration=1):
         # train discriminator
         for _ in range(iteration):
             _, disc_summary = self.sess.run([self.disc_train_op, self.disc_summary], feed_dict={

@@ -53,10 +53,6 @@ def train(sess, config):
     memory = ReplayMemory(config, model_dir)
     history = History(config)
 
-    gats_s_t = []
-    gats_action_batch = []
-    gats_s_t_plus_1 = []
-
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver(max_to_keep=30)
 
@@ -87,12 +83,14 @@ def train(sess, config):
             total_reward, total_loss, total_q_value = 0., 0., 0.
             ep_rewards, actions = [], []
 
-        # Select action
-        if config.gats:
-            if step < config.learn_start:
-                action = random.randrange(env.action_size)
-
-            else:
+        # ε-greedy
+        epsilon = (config.epsilon_end +
+                   max(0., (config.epsilon_start - config.epsilon_end)
+                       * (config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t))
+        if random.random() < epsilon:
+            action = random.randrange(env.action_size)
+        else:
+            if config.gats:
                 # GATS
                 # とりあえずlookahead=1 の時のみ
                 history_state = history.get()
@@ -102,14 +100,6 @@ def train(sess, config):
                     if j == 0 or max_q_value < np.max(q_value):
                         action = j
                         max_q_value = np.max(q_value)
-
-        else:
-            # ε-greedy
-            epsilon = (config.epsilon_end +
-                       max(0., (config.epsilon_start - config.epsilon_end)
-                           * (config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t))
-            if random.random() < epsilon:
-                action = random.randrange(env.action_size)
             else:
                 action = agent.get_action([history.get()])
 
@@ -123,16 +113,6 @@ def train(sess, config):
         if step > config.learn_start:
             if step % config.train_frequency == 0:
                 s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
-                # if gats_s_t == []:
-                #     gats_s_t = s_t
-                #     gats_action_batch = action_batch
-                #     gats_s_t_plus_1 = s_t_plus_1
-                # else:
-                #     gats_s_t = np.concatenate([gats_s_t, s_t], axis=0)
-                #     gats_action_batch = np.concatenate(
-                #         [gats_action_batch, action_batch], axis=0)
-                #     gats_s_t_plus_1 = np.concatenate(
-                #         [gats_s_t_plus_1, s_t_plus_1], axis=0)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
@@ -151,10 +131,6 @@ def train(sess, config):
                         action_batch, [-1, 1]), np.reshape(s_t_plus_1[:, 3, ...], [-1, 1, 84, 84]))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
-
-                gats_s_t = []
-                gats_action_batch = []
-                gats_s_t_plus_1 = []
 
         # Reinit
         if terminal:
