@@ -295,7 +295,7 @@ class GDM():
 
         with tf.name_scope('loss'):
             gdm_loss = -tf.reduce_mean(disc_fake)
-            disc_loss = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
+            disc_loss = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
 
             # Gradient penalty
             # with tf.name_scope('gradient_penalty'):
