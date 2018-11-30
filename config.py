@@ -53,7 +53,7 @@ class GDMConfig(object):
     gan_batch_size = 128
     rp_batch_size = 128
     lookahead = 1
-    num_rewards = 1
+    num_rewards = 3
     lamda = 10.
     lambda_l1 = 20.
     lambda_l2 = 80.
