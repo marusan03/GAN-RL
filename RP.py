@@ -30,7 +30,7 @@ class RP():
         self.reward = tf.placeholder(
             tf.float32, shape=[None, self.lookahead-1], name='rewards')
         self.state = tf.placeholder(
-            tf.float32, shape=[None, self.history_length, self.state_width, self.state_height], name='state')
+            tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
         if self.data_format == 'NHWC':
             self.concat_dim = 3
