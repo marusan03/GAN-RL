@@ -30,6 +30,8 @@ class GDM():
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
+        self.reward_action = tf.placeholder(
+            tf.int32, shape=[None, self.lookahead+1], name='reward_actions')
         self.is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
         self.concat_dim = 1
@@ -53,11 +55,17 @@ class GDM():
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
             self.predicted_state = tf.concat(
                 [self.pre_state, self.predicted_state], axis=1, name='fake_state')
+            self.reward_predicted_state = self.predicted_state
 
         with tf.variable_scope('gdm', reuse=True):
             for i in range(1, self.lookahead):
                 self.predicted_state = tf.concat([self.predicted_state, norm_state_Q_GAN(self.build_gdm(
                     self.pre_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
+
+        with tf.variable_scope('gdm', reuse=True):
+            for i in range(1, self.lookahead+1):
+                self.reward_predicted_state = tf.concat([self.reward_predicted_state, norm_state_Q_GAN(self.build_gdm(
+                    self.pre_state[:, -1*self.history_length:, ...], tf.expand_dims(self.reward_action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
 
         with tf.name_scope('opt'):
             self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op(
@@ -66,6 +74,11 @@ class GDM():
     def get_state(self, state, action):
         predicted_state = self.sess.run(self.predicted_state, feed_dict={
             self.pre_state: state, self.action: action, self.is_training: False})
+        return predicted_state
+
+    def get_reward_state(self, state, action):
+        predicted_state = self.sess.run(self.predicted_state, feed_dict={
+            self.pre_state: state, self.reward_action: action, self.is_training: False})
         return predicted_state
 
     def train(self, pre_state, action, post_state, iteration=1):
