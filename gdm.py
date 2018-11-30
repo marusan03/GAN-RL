@@ -295,7 +295,7 @@ class GDM():
 
         with tf.name_scope('loss'):
             gdm_loss = -tf.reduce_mean(disc_fake)
-            disc_loss = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
+            disc_loss = tf.reduce_mean(disc_real) - tf.reduce_mean(disc_fake)
 
             # Gradient penalty
             # with tf.name_scope('gradient_penalty'):
@@ -318,6 +318,11 @@ class GDM():
             #     gradient_penalty = tf.reduce_mean(
             #         (slopes-1.)**2, name='gradient_penalty')
             #     disc_loss += self.lamda * gradient_penalty
+            with tf.name_scope('L1_L2_loss'):
+                difference = fake_state[:, -1*self.lookahead:, ...] - post_state
+                l1_loss = tf.reduce_mean(tf.abs(difference))
+                l2_loss = tf.reduce_mean(tf.square(difference))
+                gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
 
             with tf.name_scope('weight_decay'):
                 gdm_weight_decay = tf.losses.get_regularization_loss(
@@ -327,12 +332,6 @@ class GDM():
 
                 gdm_loss += gdm_weight_decay
                 disc_loss += disc_weight_decay
-
-        with tf.name_scope('L1_L2_loss'):
-            difference = fake_state[:, -1*self.lookahead:, ...] - post_state
-            l1_loss = tf.reduce_mean(tf.abs(difference))
-            l2_loss = tf.reduce_mean(tf.square(difference))
-            gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
 
         gdm_summary = tf.summary.scalar('gdm_loss', gdm_loss)
         disc_summary = tf.summary.scalar('disc_loss', disc_loss)
