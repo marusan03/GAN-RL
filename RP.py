@@ -35,6 +35,8 @@ class RP():
 
         print(self.state.shape)
 
+        print("testtesttesttesttest")
+
         if self.data_format == 'NHWC':
             self.concat_dim = 3
             self.state = tf.transpose(
