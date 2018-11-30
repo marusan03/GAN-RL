@@ -66,9 +66,7 @@ class GDM():
     def get_state(self, state, action):
         predicted_state = self.sess.run(self.predicted_state, feed_dict={
             self.pre_state: state, self.action: action, self.is_training: False})
-        trajectories = np.concatenate(
-            [state, predicted_state], axis=self.concat_dim)
-        return trajectories
+        return predicted_state
 
     def train(self, pre_state, action, post_state, iteration=1):
         # train discriminator
@@ -283,6 +281,7 @@ class GDM():
 
         real_state = tf.concat(
             [pre_state, post_state], axis=self.concat_dim, name='real_state')
+        fake_state = self.predicted_state
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
