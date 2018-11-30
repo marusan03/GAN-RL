@@ -99,7 +99,7 @@ class RP():
             outputs = self.predicted_reward[:,
                                             self.num_rewards * ind: self.num_rewards * (ind + 1)]
             loss = loss + \
-                tf.nn.softmax_cross_entropy_with_logits(
+                tf.nn.softmax_cross_entropy_with_logits_v2(
                     labels=reward[:, ind, 0], logits=outputs)
 
         with tf.name_scope('weight_decay'):

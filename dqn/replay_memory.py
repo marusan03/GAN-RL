@@ -237,9 +237,7 @@ class ReplayMemory(object):
         # make sure we are not using low-dimensional observations, such as RAM
         if len(frame.shape) > 1:
             # transpose image frame into (img_c, img_h, img_w)
-            frame = scipy.misc.imresize(frame.mean(
-                2), (img_h, img_w)).reshape([1, img_h, img_w])
-            # frame = frame.transpose(2, 0, 1)
+            frame = frame.reshape([1, img_h, img_w])
 
         if self.obs is None:
             self.obs = np.empty(
