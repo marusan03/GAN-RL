@@ -50,9 +50,9 @@ class RP():
         return predicted_reward
 
     def train(self, state, action, reward):
-        _, rp_summary, test = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
+        _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
             self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
-        print(get_reward(state, action))
+        print(self.get_reward(state, action))
         return rp_summary
 
     def build_rp(self, state, action):
