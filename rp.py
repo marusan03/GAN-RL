@@ -41,7 +41,7 @@ class RP():
             self.predicted_reward = self.build_rp(self.state, self.action)
 
         with tf.name_scope('opt'):
-            self.rp_train_op, self.rp_summary, self.cross_entropy_loss, self.loss = self.build_training_op(
+            self.rp_train_op, self.rp_summary = self.build_training_op(
                 self.state, self.action, self.reward)
 
     def get_reward(self, state, action):
@@ -50,9 +50,8 @@ class RP():
         return predicted_reward
 
     def train(self, state, action, reward):
-        _, rp_summary, cross_entropy_loss, loss = self.sess.run([self.rp_train_op, self.rp_summary, self.cross_entropy_loss, self.loss], feed_dict={
+        _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
             self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
-        print(cross_entropy_loss, loss)
         return rp_summary
 
     def build_rp(self, state, action):
@@ -95,22 +94,23 @@ class RP():
         return output
 
     def build_training_op(self, state, action, reward):
-        cross_entropy_loss = 0.
-        for ind in range(self.lookahead + 1):
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=reward[:, 0, 0], logits=self.predicted_reward[:, 0:self.num_rewards]))
+        for ind in range(1, self.lookahead + 1):
             outputs = self.predicted_reward[:,
                                             self.num_rewards*ind: self.num_rewards*(ind + 1)]
-            cross_entropy_loss = cross_entropy_loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+            loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=reward[:, ind, 0], logits=outputs))
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(
                 scope='RP', name='rp_weight_decay')
 
-        loss = rp_weight_decay - cross_entropy_loss
+        loss = rp_weight_decay - loss
 
         rp_summary = tf.summary.scalar('rp_loss', loss)
 
         rp_train_op = tf.train.AdamOptimizer(
             learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
 
-        return rp_train_op, rp_summary, cross_entropy_loss, loss
+        return rp_train_op, rp_summary
