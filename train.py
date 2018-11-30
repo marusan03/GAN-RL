@@ -167,6 +167,8 @@ def train(sess, config):
             if config.gats and step % gdm_train_frequency == 0:
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
+                print(norm_frame(next_state_batch).shape,
+                      norm_frame(next_state_batch).dtype)
                 gdm.summary, disc_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
                 writer.add_summary(gdm.summary, step)
