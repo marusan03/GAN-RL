@@ -168,7 +168,7 @@ def train(sess, config):
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
                 gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch).astype(np.float32), act_batch, norm_frame(next_state_batch).astype(np.float32))
+                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
