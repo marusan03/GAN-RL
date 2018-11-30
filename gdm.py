@@ -36,7 +36,7 @@ class GDM():
         self.pre_state = tf.placeholder(
             tf.float32, shape=[None, self.history_length, self.state_width, self.state_height], name='pre_state')
         self.post_state = tf.placeholder(
-            tf.float32, shape=[None, 1, self.state_width, self.state_height], name='post_state')
+            tf.float32, shape=[None, self.lookahead, self.state_width, self.state_height], name='post_state')
 
         if self.data_format == 'NHWC':
             self.concat_dim = 3
@@ -53,6 +53,7 @@ class GDM():
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
             self.predicted_state = tf.concat(
                 [self.pre_state, self.predicted_state], axis=1)
+            print(self.predicted_state.shape)
 
         with tf.variable_scope('gdm', reuse=True):
             for i in range(1, self.lookahead):
@@ -217,6 +218,7 @@ class GDM():
             decode6 = tf.layers.batch_normalization(
                 decode6, momentum=0.9, epsilon=1e-05, training=is_training, name='BN6')
             decode6 = tf.nn.tanh(decode6, name='tanh')
+            print(decode6.shape)
             # (None, 84, 84, lookahead)
 
         return decode6
