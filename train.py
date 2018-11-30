@@ -36,7 +36,7 @@ def train(sess, config):
 
     env = GymEnvironment(config)
 
-    model_dir = './log/{}_lookahead_{}_gats_{}'.format(
+    model_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints')
     print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
