@@ -31,6 +31,7 @@ class RP():
             tf.float32, shape=[None, self.lookahead-1], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
+        print(self.history_length + self.lookahead)
 
         print(self.state.shape)
 
