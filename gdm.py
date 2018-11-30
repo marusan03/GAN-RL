@@ -53,7 +53,6 @@ class GDM():
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
             self.predicted_state = tf.concat(
                 [self.pre_state, self.predicted_state], axis=1)
-            print(self.predicted_state.shape)
 
         with tf.variable_scope('gdm', reuse=True):
             for i in range(1, self.lookahead):
@@ -218,7 +217,6 @@ class GDM():
             decode6 = tf.layers.batch_normalization(
                 decode6, momentum=0.9, epsilon=1e-05, training=is_training, name='BN6')
             decode6 = tf.nn.tanh(decode6, name='tanh')
-            print(decode6.shape)
             # (None, 84, 84, lookahead)
 
         return decode6
@@ -287,6 +285,8 @@ class GDM():
             [pre_state, post_state], axis=self.concat_dim, name='real_state')
         fake_state = tf.concat(
             [pre_state, predicted_state], axis=self.concat_dim, name='fake_state')
+        print(real_state.shape)
+        print(fake_state.shape)
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
