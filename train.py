@@ -29,7 +29,7 @@ def norm_state_Q_GAN(state):
 
 
 def unnorm_frame(obs):
-    return int(np.clip(obs * 130. + 127.5, 0., 255.))
+    return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.int32)
 
 
 def train(sess, config):
