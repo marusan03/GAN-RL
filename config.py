@@ -32,6 +32,8 @@ class AgentConfig(object):
     _test_step = 5 * scale
     _save_step = _test_step * 10
 
+    num_actions = 18
+
 
 class EnvironmentConfig(object):
     env_name = 'PongNoFrameskip-v3'

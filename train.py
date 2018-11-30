@@ -67,7 +67,7 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.histogram(
                 tag, summary_placeholders[tag])
 
-    num_actions = env.action_size
+    config.num_actions = env.action_size
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
     exploration_gan = LinearSchedule(50000, 0.01)
 
@@ -75,9 +75,9 @@ def train(sess, config):
         lookahead = config.lookahead
         rp_train_frequency = 4
         gdm_train_frequency = 4
-        gdm = GDM(sess, config, num_actions=num_actions)
-        rp = RP(sess, config, num_actions=num_actions)
-        leaves_size = num_actions**config.lookahead
+        gdm = GDM(sess, config, num_actions=config.num_actions)
+        rp = RP(sess, config, num_actions=config.num_actions)
+        leaves_size = config.num_actions**config.lookahead
 
         def base_generator():
             tree_base = np.zeros((leaves_size, lookahead)).astype('uint8')
@@ -85,14 +85,14 @@ def train(sess, config):
                 n = i
                 j = 0
                 while n:
-                    n, r = divmod(n, num_actions)
+                    n, r = divmod(n, config.num_actions)
                     tree_base[i, lookahead-1-j] = r
                     j = j + 1
             return tree_base
 
         tree_base = base_generator()
 
-    agent = Agent(sess, config, num_actions=num_actions)
+    agent = Agent(sess, config, num_actions=config.num_actions)
     memory = ReplayMemory(config)
     history = History(config)
 
