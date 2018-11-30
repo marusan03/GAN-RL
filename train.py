@@ -170,7 +170,7 @@ def train(sess, config):
                 print(norm_frame(next_state_batch).shape,
                       norm_frame(next_state_batch).dtype)
                 gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
+                    norm_frame(state_batch).astype(np.float32), act_batch, norm_frame(next_state_batch).astype(np.float32))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
