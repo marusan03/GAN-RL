@@ -94,9 +94,8 @@ class RP():
         return output
 
     def build_training_op(self, state, action, reward):
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=reward[:, 0, 0], logits=self.predicted_reward[:, 0:self.num_rewards]))
-        for ind in range(1, self.lookahead + 1):
+        loss = 0.
+        for ind in range(self.lookahead + 1):
             outputs = self.predicted_reward[:,
                                             self.num_rewards*ind: self.num_rewards*(ind + 1)]
             loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
