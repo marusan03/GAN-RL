@@ -28,7 +28,7 @@ class RP():
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead+1], name='actions')
         self.reward = tf.placeholder(
-            tf.int32, shape=[None, self.lookahead+1, self.num_rewards], name='rewards')
+            tf.int32, shape=[None, self.lookahead+1, 1], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
@@ -50,7 +50,6 @@ class RP():
         return predicted_reward
 
     def train(self, state, action, reward):
-        print(self.get_reward(state, action))
         _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
             self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
         return rp_summary
