@@ -254,19 +254,21 @@ class GDM():
         # (None, 400)
 
         action_one_hot = tf.one_hot(
-            action, self.num_actions, name='action_one_hot')
+            action, self.num_actions, 1., 0., name='action_one_hot')
 
         action_one_hot = tf.layers.flatten(
             action_one_hot, name='action_one_hot_flatten')
 
-        output = tf.concat([output, action_one_hot], 1, name='concat1')
+        output = tf.concat([output, action_one_hot],
+                           self.concat_dim, name='concat1')
 
         output = lib.nn.linear.Linear(
             'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection)
         output = tf.nn.leaky_relu(output, -0.2)
         # (None, 18)
 
-        output = tf.concat([output, action_one_hot], 1, name='concat2')
+        output = tf.concat([output, action_one_hot],
+                           self.concat_dim, name='concat2')
         # (None, 18+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
