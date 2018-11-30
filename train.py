@@ -183,8 +183,8 @@ def train(sess, config):
                 rew_batch = np.concatenate((rew, reward_rew), axis=0)
                 reward_labels = rew_batch + 1
 
-                trajectories = gdm.get_reward_state(
-                    obs_batch[:, -1*config.history_length:, :, :], act_batch)
+                trajectories = gdm.get_state(
+                    obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
 
                 rp_summary = rp.train(
                     trajectories, act_batch, reward_labels)
