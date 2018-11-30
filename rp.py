@@ -108,7 +108,7 @@ class RP():
 
         loss += rp_weight_decay
 
-        rp_summary = tf.summary.scalar('rp_loss', loss)
+        rp_summary = tf.summary.scalar('rp_loss', tf.reduce_mean(loss))
 
         rp_train_op = tf.train.AdamOptimizer(
             learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
