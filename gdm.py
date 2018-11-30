@@ -71,7 +71,7 @@ class GDM():
     def get_reward_state(self, state, action):
         for i in range(self.lookahead+1):
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
-                self.pre_state: state, self.action: np.expand_dims(action[:, i], axis=1), self.is_training: False})
+                self.pre_state: state[:, -1*self.history_length, ...], self.action: np.expand_dims(action[:, i], axis=1), self.is_training: False})
             state = np.concatenate([state, predicted_state], axis=1)
         return state
 
