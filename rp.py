@@ -98,10 +98,8 @@ class RP():
         for ind in range(self.lookahead + 1):
             outputs = self.predicted_reward[:,
                                             self.num_rewards*ind: self.num_rewards*(ind + 1)]
-            loss = loss + \
-                tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    labels=reward[:, ind, 0], logits=outputs)
-            print(loss.shape)
+            loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+                labels=reward[:, ind, 0], logits=outputs))
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(
@@ -109,7 +107,7 @@ class RP():
 
         loss = rp_weight_decay - loss
 
-        rp_summary = tf.summary.scalar('rp_loss', tf.reduce_mean(loss))
+        rp_summary = tf.summary.scalar('rp_loss', loss)
 
         rp_train_op = tf.train.AdamOptimizer(
             learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
