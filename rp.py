@@ -105,7 +105,7 @@ class RP():
             rp_weight_decay = tf.losses.get_regularization_loss(
                 scope='RP', name='rp_weight_decay')
 
-        loss = rp_weight_decay - loss
+        loss += rp_weight_decay
 
         rp_summary = tf.summary.scalar('rp_loss', loss)
 
