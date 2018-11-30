@@ -245,7 +245,7 @@ class ReplayMemory(object):
             self.action = np.empty([self.size],
                                    dtype=np.int32)
             self.reward = np.empty([self.size],
-                                   dtype=np.float32)
+                                   dtype=np.int32)
             self.done = np.empty([self.size],
                                  dtype=np.bool)
 
