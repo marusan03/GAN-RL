@@ -253,6 +253,7 @@ class ReplayMemory(object):
         self.action[self.next_idx] = action
         self.reward[self.next_idx] = reward
         self.done[self.next_idx] = done
+        print(self.reward[self.next_idx])
 
         if(self.overwrite_idx != None and self.next_idx == self.nonzero_rewards[self.overwrite_idx]):
             self.nonzero_rewards.pop(self.overwrite_idx)
