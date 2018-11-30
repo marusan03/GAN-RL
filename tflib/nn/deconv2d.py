@@ -25,20 +25,20 @@ def Deconv2D(
     """
     with tf.variable_scope(name):
 
-        def uniform(stdev, size):
-            return np.random.uniform(
-                low=-stdev,
-                high=stdev,
-                size=size
-            ).astype('float32')
+        def uniform(stdev, shape):
+            return tf.random.uniform(
+                shape=shape,
+                minval=-stdev * tf.sqrt(3),
+                maxval=stdev * tf.sqrt(3)
+            )
 
         fan_in = input_dim * filter_size**2 / (stride**2)
         fan_out = output_dim * filter_size**2
 
         if he_init:
-            filters_stdev = np.sqrt(2./fan_out)
+            filters_stdev = np.sqrt(4./(fan_in+fan_out))
         else:  # Normalized init (Glorot & Bengio)
-            filters_stdev = np.sqrt(6./(fan_in+fan_out))
+            filters_stdev = np.sqrt(2./(fan_in+fan_out))
 
         filter_values = uniform(
             filters_stdev,

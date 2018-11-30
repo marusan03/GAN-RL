@@ -6,69 +6,111 @@ import tflib.nn.conv2d
 import numpy as np
 
 
-class Reward_Predictor():
+def norm_state_Q_GAN(state):
+    return np.clip(state, -1*127.5/130., 127.5/130.)
 
-    def __init__(self):
-        pass
 
-    def model(self, inputs, action, is_training=False, num_actions=18, lookahead=1, ngf=32):
+class RP():
 
-        self.output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.1', 4 + lookahead - 1, ngf, 8, inputs, stride=4, padding='VALID')
-        self.output = tf.layers.batch_normalization(
-            self.output, momentum=0.9, epsilon=1e-05, training=is_training, name='RP_BN1')
-        self.output = tf.nn.leaky_relu(self.output, -0.1)
+    def __init__(self, session, config, num_actions=18):
+        self.sess = session
+        self.config = config
+        self.num_actions = num_actions
+        self.lookahead = self.config.lookahead
+        self.num_rewards = self.config.num_rewards
+        self.history_length = self.config.history_length
+        self.state_width = self.config.screen_width
+        self.state_height = self.config.screen_height
+        self.data_format = self.config.cnn_format
+
+        self.concat_dim = 1
+
+        self.action = tf.placeholder(
+            tf.int32, shape=[None, self.lookahead], name='actions')
+        self.reward = tf.placeholder(
+            tf.float32, shape=[None, self.lookahead-1], name='rewards')
+        self.state = tf.placeholder(
+            tf.float32, shape=[None, self.history_length, self.state_width, self.state_height], name='state')
+
+        if self.data_format == 'NHWC':
+            self.concat_dim = 3
+            self.state = tf.transpose(
+                self.state, (0, 2, 3, 1), name='NCHW_to_NHWC')
+
+        with tf.variable_scope('RP'):
+            self.predicted_reward = self.build_rp(self.state, self.action)
+
+        with tf.name_scope('opt'):
+            self.rp_train_op, self.rp_summary = self.build_training_op(
+                self.state, self.action, self.reward)
+
+    def get_reward(self, state, action):
+        predicted_reward = self.sess.run(self.predicted_reward, feed_dict={
+            self.state: norm_state_Q_GAN(state), self.action: action})
+        return predicted_reward
+
+    def train(self, state, action, reward):
+        _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
+            self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
+        return rp_summary
+
+    def build_rp(self, state, action):
+
+        output = lib.nn.conv2d.Conv2D(
+            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, weight_norm_scale=0.0001, stride=4, padding='VALID', data_format=self.data_format)
+        output = tf.nn.leaky_relu(output, -0.1)
         # (None, 20, 20, 32)
 
-        self.output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.2', ngf, ngf * 2, 4, self.output, stride=2, padding='VALID')
-        self.output = tf.layers.batch_normalization(
-            self.output, momentum=0.9, epsilon=1e-05, training=is_training, name='RP_BN2')
-        self.output = tf.nn.leaky_relu(self.output, -0.1)
+        output = lib.nn.conv2d.Conv2D(
+            'RP_Conv.2', 32, 64, 4, output, weight_norm_scale=0.0001, stride=2, padding='VALID', data_format=self.data_format)
+        output = tf.nn.leaky_relu(output, -0.1)
         # (None, 9, 9, 64)
 
-        self.output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.3', ngf * 2, ngf * 2, 3, self.output, stride=1, padding='VALID')
-        self.output = tf.layers.batch_normalization(
-            self.output, momentum=0.9, epsilon=1e-05, training=is_training, name='RP_BN3')
-        # (None, 7, 7, 64)
+        output = lib.nn.conv2d.Conv2D(
+            'RP_Conv.3', 64, 128, 3, output, weight_norm_scale=0.0001, stride=1, padding='VALID', data_format=self.data_format)
+        # (None, 7, 7, 128)
 
-        self.output = tf.reshape(
-            self.output, [self.output.get_shape()[0], -1])
-        # (None, 3136)
+        output = tf.layers.flatten(output, name='RP_Flatten')
+        # (None, 6272)
 
-        self.output = lib.nn.linear.Linear(
-            'RP_Dence.1', 3136, 20, self.output)
-        self.output = tf.nn.relu(self.output)
-        # (None, 20)
+        output = lib.nn.linear.Linear(
+            'RP_Dence.1', 6272, 512, output, weight_norm_scale=0.0001)
+        output = tf.nn.relu(output)
+        # (None, 512)
 
-        self.output = tf.concat([self.output, action], 1)
-        # (None, 20+num_actions*lookahead)
+        action_one_hot = tf.one_hot(
+            action, self.num_actions, name='action_one_hot')
 
-        self.output = lib.nn.linear.Linear(
-            'RP_Dence.2', 20 + num_actions*lookahead, 3*lookahead, self.output)
+        action_one_hot = tf.layers.flatten(
+            action_one_hot, name='action_one_hot_flatten')
+
+        output = tf.concat([output, action], self.concat_dim)
+        # (None, 512+num_actions*lookahead)
+
+        output = lib.nn.linear.Linear(
+            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, weight_norm_scale=0.0001)
         # (None, 3*lookahead)
 
-        return self.output
+        return output
 
+    def build_training_op(self, state, action, reward):
+        loss = 0.
+        for ind in range(self.lookahead + 1):
+            outputs = self.predicted_reward[:,
+                                            self.num_rewards * ind: self.num_rewards * (ind + 1)]
+            loss = loss + \
+                tf.nn.softmax_cross_entropy_with_logits(
+                    labels=reward[:, ind, 0], logits=outputs)
 
-if __name__ == '__main__':
-    inputs = tf.placeholder(tf.float32, shape=[100, 84, 84, 4])
-    is_training = tf.placeholder_with_default(False, [])
-    action = tf.placeholder(tf.float32, shape=[100, 5])
-    act = np.random.randint(0, 2, (100, 5))
-    with tf.variable_scope("a"):
-        a = Reward_Predictor().model(inputs, action, is_training, num_actions=5)
-    with tf.variable_scope("a", reuse=True):
-        b = Reward_Predictor().model(inputs, action, is_training, num_actions=5)
-    test = 2 * (np.random.rand(100, 84, 84, 4) - 0.5)
+        with tf.name_scope('weight_decay'):
+            rp_weight_decay = tf.losses.get_regularization_loss(
+                scope='RP', name='rp_weight_decay')
 
-    with tf.Session() as session:
+        loss += rp_weight_decay
 
-        with tf.summary.FileWriter('./log/', session.graph):
+        rp_summary = tf.summary.scalar('rp_loss', loss)
 
-            session.run(tf.global_variables_initializer())
-            result = session.run(
-                a, feed_dict={inputs: test, is_training: True, action: act})
-            print(result.shape)
-            print('\n'.join([v.name for v in tf.global_variables()]))
+        rp_train_op = tf.train.AdamOptimizer(
+            learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
+
+        return rp_train_op, rp_summary

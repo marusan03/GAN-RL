@@ -1,8 +1,8 @@
-import tflib as lib
-from tflib.nn.sn import spectral_normalization
-
 import numpy as np
 import tensorflow as tf
+
+import tflib as lib
+from tflib.nn.sn import spectral_normalization
 
 NO_OPS = 'NO_OPS'
 
@@ -23,28 +23,23 @@ def Conv2D(
     padding='SAME',
     data_format='NCHW'
 ):
-    """
-    inputs: tensor of shape (batch size, height, width, num channels)
-    mask_type: one of None, 'a', 'b'
 
-    returns: tensor of shape (batch size, height, width, num channels)
-    """
     with tf.variable_scope(name):
 
-        def uniform(stdev, size):
-            return np.random.uniform(
-                low=-stdev,
-                high=stdev,
-                size=size
-            ).astype('float32')
+        def uniform(stdev, shape):
+            return tf.random.uniform(
+                shape=shape,
+                minval=-stdev * tf.sqrt(3),
+                maxval=stdev * tf.sqrt(3)
+            )
 
         fan_in = input_dim * filter_size**2
         fan_out = output_dim * filter_size**2 / (stride**2)
 
         if he_init:
-            filters_stdev = np.sqrt(2./fan_in)
+            filters_stdev = np.sqrt(4./(fan_in+fan_out))
         else:  # Normalized init (Glorot & Bengio)
-            filters_stdev = np.sqrt(6./(fan_in+fan_out))
+            filters_stdev = np.sqrt(2./(fan_in+fan_out))
 
         filter_values = uniform(
             filters_stdev,

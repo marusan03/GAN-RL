@@ -45,10 +45,23 @@ class EnvironmentConfig(object):
 
 
 class GDMConfig(object):
+    gan_memory_size = 10000
+    gan_learn_start = 10000
+    gan_dqn_learn_start = 200000
+    gan_batch_size = 128
+    rp_batch_size = 128
     lookahead = 1
+    num_rewards = 1
     lamda = 10.
-    gdm_train_frequency = 16
+    lambda_l1 = 20.
+    lambda_l2 = 80.
+    gdm_ngf = 24
+    disc_ngf = 24
     gats = True
+
+
+class RPConfig(object):
+    rp_learn_start = 10000
 
 
 class DQNConfig(AgentConfig, EnvironmentConfig):
@@ -56,7 +69,7 @@ class DQNConfig(AgentConfig, EnvironmentConfig):
     pass
 
 
-class M1(DQNConfig, GDMConfig):
+class M1(DQNConfig, GDMConfig, RPConfig):
     backend = 'tf'
     env_type = 'detail'
     action_repeat = 4

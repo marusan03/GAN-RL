@@ -10,6 +10,26 @@ from dqn.replay_memory import ReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
+from rp import RP
+from dqn.utils import LinearSchedule
+
+
+def norm_frame(obs):
+    x = (obs - 127.5)/130.
+    return x
+
+
+def norm_frame_Q(obs):
+    x = obs/255.
+    return x
+
+
+def norm_state_Q_GAN(state):
+    return np.clip(state, -1*127.5/130., 127.5/130.)
+
+
+def unnorm_frame(obs):
+    return int(np.clip(obs * 130. + 127.5, 0., 255.))
 
 
 def train(sess, config):
@@ -47,10 +67,33 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.histogram(
                 tag, summary_placeholders[tag])
 
+    num_actions = env.action_size
+    exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
+    exploration_gan = LinearSchedule(50000, 0.01)
+
     if config.gats == True:
-        gdm = GDM(sess, config, num_actions=env.action_size)
-    agent = Agent(sess, config, num_actions=env.action_size)
-    memory = ReplayMemory(config, model_dir)
+        lookahead = config.lookahead
+        rp_train_frequency = 4
+        gdm_train_frequency = 4
+        gdm = GDM(sess, config, num_actions=num_actions)
+        rp = RP(sess, config, num_actions=num_actions)
+        leaves_size = num_actions**config.lookahead
+
+        def base_generator():
+            tree_base = np.zeros((leaves_size, lookahead)).astype('uint8')
+            for i in range(leaves_size):
+                n = i
+                j = 0
+                while n:
+                    n, r = divmod(n, num_actions)
+                    tree_base[i, lookahead-1-j] = r
+                    j = j + 1
+            return tree_base
+
+        tree_base = base_generator()
+
+    agent = Agent(sess, config, num_actions=num_actions)
+    memory = ReplayMemory(config)
     history = History(config)
 
     sess.run(tf.global_variables_initializer())
@@ -70,12 +113,13 @@ def train(sess, config):
 
     screen, reward, action, terminal = env.new_random_game()
 
-    # 初期状態
+    # init state
     for _ in range(config.history_length):
-        history.add(screen)
+        history.add(norm_frame(screen))
 
     start_step = step_op.eval()
 
+    # main
     for step in tqdm(range(start_step, config.max_step), ncols=70, initial=start_step):
 
         if step == config.learn_start:
@@ -84,38 +128,32 @@ def train(sess, config):
             ep_rewards, actions = [], []
 
         # ε-greedy
-        epsilon = (config.epsilon_end +
-                   max(0., (config.epsilon_start - config.epsilon_end)
-                       * (config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t))
+        epsilon = exploration.value(step)
         if random.random() < epsilon:
             action = random.randrange(env.action_size)
         else:
-            if config.gats:
-                # GATS
-                # とりあえずlookahead=1 の時のみ
-                history_state = history.get()
-                for j in range(0, env.action_size):
-                    predict_state = gdm.get_state([history_state], [[j]])
-                    q_value = agent.get_q_value(predict_state[:, 1:5, ...])
-                    if j == 0 or max_q_value < np.max(q_value):
-                        action = j
-                        max_q_value = np.max(q_value)
+            if config.gats and (step >= config.gan_dqn_learn_start):
+                action = MCTS_planning(
+                    gdm, rp, agent, np.expand_dims(history.get(), axis=0), leaves_size, tree_base, config, exploration, step)
             else:
-                action = agent.get_action([history.get()])
+                action = agent.get_action(
+                    norm_frame_Q(unnorm_frame(np.expand_dims(history.get(), axis=0))))
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
-        history.add(screen)
+        history.add(norm_frame(screen))
         memory.add(screen, reward, action, terminal)
 
         # Train
         if step > config.learn_start:
             if step % config.train_frequency == 0:
-                s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch = memory.sample()
+                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
+                    config.batch_size, config.lookahead)
+                s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
-                    s_t, action_batch, reward_batch, s_t_plus_1, terminal_batch, step)
+                    s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
 
                 writer.add_summary(dqn_summary, step)
                 total_loss += loss
@@ -125,14 +163,33 @@ def train(sess, config):
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
 
-            if config.gats and step % config.gdm_train_frequency == 0:
+            if config.gats and step % gdm_train_frequency == 0:
+                state_batch, act_batch, next_state_batch = memory.GAN_sample(
+                    config.gan_batch_size, config.lookahead)
                 gdm.summary, disc_summary = gdm.train(
-                    s_t, np.reshape(
-                        action_batch, [-1, 1]), np.reshape(s_t_plus_1[:, 3, ...], [-1, 1, 84, 84]))
+                    state_batch, act_batch, next_state_batch)
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
-        # Reinit
+            if config.gats and step % rp_train_frequency == 0:
+                obs, act, rew = memory.reward_sample(
+                    config.rp_batch_size, config.lookahead)
+                reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
+                    config.rp_batch_size, lookahead)
+                obs_batch = norm_frame(
+                    np.concatenate((obs, reward_obs), axis=0))
+                act_batch = np.concatenate((act, reward_act), axis=0)
+                rew_batch = np.concatenate((rew, reward_rew), axis=0)
+                reward_labels = rew_batch + 1
+
+                trajectories = gdm.get_state(
+                    obs_batch[:, -1*config.history_length:, :, :], act_batch)
+
+                rp_summary = rp.train(
+                    trajectories, act_batch, reward_labels)
+                writer.add_summary(rp_summary, step)
+
+        # reinit
         if terminal:
             screen, reward, action, terminal = env.new_random_game()
 
@@ -143,6 +200,18 @@ def train(sess, config):
             ep_reward += reward
 
         total_reward += reward
+
+        # change train freqancy
+        if config.gats:
+            if step == 10000 - 1:
+                rp_train_frequency = 8
+                gdm_train_frequency = 8
+            if step == 50000 - 1:
+                rp_train_frequency = 16
+                gdm_train_frequency = 16
+            if step == 100000 - 1:
+                rp_train_frequency = 24
+                gdm_train_frequency = 24
 
         # calcurate infometion
         if step >= config.learn_start:
@@ -201,6 +270,38 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
     })
     for summary_str in summary_str_lists:
         writer.add_summary(summary_str, step)
+
+
+def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, step):
+
+    sample1 = random.random()
+    sample2 = random.random()
+    epsiron = exploration.value(step)
+
+    state = np.repeat(state, leaves_size, axis=0)
+    action = tree_base
+    trajectories = gdm.get_state(state, action)
+    leaves_q_value = agent.get_q_value(
+        norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
+    leaves_Q_max = config.discount ** (config.lookahead) * \
+        np.max(leaves_q_value, axis=1)
+    leaves_act_max = np.argmax(leaves_q_value, axis=1)
+    if sample2 < epsiron:
+        leaves_act_max = np.random.randint(
+            0, config.num_actions, leaves_act_max.shape)
+    reward_actions = np.concatenate((tree_base, leaves_act_max), axis=1)
+    predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
+    predicted_cum_return = np.zeros(leaves_size)
+    # ここが微妙
+    for i in range(config.lookahead):
+        predicted_cum_return = config.discount * predicted_cum_return + \
+            (np.max(predicted_cum_rew[:, ((config.lookahead-i-1)*config.num_rewards):(
+                (config.lookahead-i)*config.num_rewards)], axis=1)[1]-1.)
+    GATS_action = leaves_Q_max + predicted_cum_return
+    max_idx = np.argmax(GATS_action, axis=0)
+    return_action = int(tree_base[max_idx, 0])
+    # GANのメモリに代入するコードはまた今度
+    return return_action
 
 
 def save_model(sess, saver, checkpoint_dir, step=None):

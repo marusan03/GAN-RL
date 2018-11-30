@@ -47,14 +47,14 @@ def Linear(
     """
     with tf.variable_scope(name):
 
-        def uniform(stdev, size):
+        def uniform(stdev, shape):
             if _weights_stdev is not None:
                 stdev = _weights_stdev
-            return np.random.uniform(
-                low=-(stdev * np.sqrt(3)),
-                high=stdev * np.sqrt(3),
-                size=size
-            ).astype('float32')
+            return tf.random.uniform(
+                shape=shape,
+                minval=-stdev * tf.sqrt(3),
+                maxval=stdev * tf.sqrt(3)
+            )
 
         if initialization == 'lecun':  # and input_dim != output_dim):
             # disabling orth. init for now because it's too slow
