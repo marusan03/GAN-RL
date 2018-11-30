@@ -89,7 +89,7 @@ class GDM():
 
         # train gdm
         _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
-            self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.is_training: True})
+            self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.reward_action: action, self.is_training: True})
         return gdm_summary, disc_summary
 
     def build_gdm(self, state, action, is_training, lookahead=1, ngf=32):
