@@ -61,14 +61,14 @@ class GDM():
                 self.predicted_state = tf.concat([self.predicted_state, norm_state_Q_GAN(self.build_gdm(
                     self.predicted_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
 
-        with tf.variable_scope('gdm', reuse=True):
-            self.reward_predicted_state = norm_state_Q_GAN(self.build_gdm(
-                self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
-            self.reward_predicted_state = tf.concat(
-                [self.pre_state, self.reward_predicted_state], axis=1, name='fake_state')
-            for i in range(1, self.lookahead+1):
-                self.reward_predicted_state = tf.concat([self.reward_predicted_state, norm_state_Q_GAN(self.build_gdm(
-                    self.reward_predicted_state[:, -1*self.history_length:, ...], tf.expand_dims(self.reward_action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
+        # with tf.variable_scope('gdm', reuse=True):
+        #     self.reward_predicted_state = norm_state_Q_GAN(self.build_gdm(
+        #         self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
+        #     self.reward_predicted_state = tf.concat(
+        #         [self.pre_state, self.reward_predicted_state], axis=1, name='fake_state')
+        #     for i in range(1, self.lookahead+1):
+        #         self.reward_predicted_state = tf.concat([self.reward_predicted_state, norm_state_Q_GAN(self.build_gdm(
+        #             self.reward_predicted_state[:, -1*self.history_length:, ...], tf.expand_dims(self.reward_action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
 
         with tf.name_scope('opt'):
             self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op(
