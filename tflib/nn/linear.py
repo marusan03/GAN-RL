@@ -50,7 +50,7 @@ def Linear(
         def uniform(stdev, shape):
             if _weights_stdev is not None:
                 stdev = _weights_stdev
-            return tf.random.uniform(
+            return tf.random_uniform(
                 shape=shape,
                 minval=-stdev * tf.sqrt(3),
                 maxval=stdev * tf.sqrt(3)

@@ -27,7 +27,7 @@ def Conv2D(
     with tf.variable_scope(name):
 
         def uniform(stdev, shape):
-            return tf.random.uniform(
+            return tf.random_uniform(
                 shape=shape,
                 minval=-stdev * tf.sqrt(3),
                 maxval=stdev * tf.sqrt(3)
