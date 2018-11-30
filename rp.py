@@ -28,7 +28,7 @@ class RP():
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead+1], name='actions')
         self.reward = tf.placeholder(
-            tf.float32, shape=[None, self.lookahead+1, self.num_rewards], name='rewards')
+            tf.float32, shape=[None, self.lookahead+1, self.num_rewards, self.num_rewards], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
@@ -95,7 +95,6 @@ class RP():
 
     def build_training_op(self, state, action, reward):
         loss = 0.
-        print(reward.shape)
         for ind in range(self.lookahead + 1):
             outputs = self.predicted_reward[:,
                                             self.num_rewards * ind: self.num_rewards * (ind + 1)]
