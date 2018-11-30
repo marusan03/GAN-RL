@@ -234,7 +234,6 @@ class ReplayMemory(object):
             return self.action[start_idx-1:end_idx-1].reshape(-1, 1), self.reward[start_idx-1:end_idx-1].reshape(-1, 1)
 
     def add(self, frame, action, reward, done):
-        print(reward)
         # make sure we are not using low-dimensional observations, such as RAM
         if len(frame.shape) > 1:
             # transpose image frame into (img_c, img_h, img_w)
@@ -249,8 +248,6 @@ class ReplayMemory(object):
                                    dtype=np.float32)
             self.done = np.empty([self.size],
                                  dtype=np.bool)
-
-        print("-------", reward)
 
         self.obs[self.next_idx] = frame
         self.action[self.next_idx] = action
