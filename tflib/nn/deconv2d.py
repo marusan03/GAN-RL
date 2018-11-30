@@ -28,6 +28,7 @@ def Deconv2D(
         def uniform(stdev, shape):
             return tf.random_uniform(
                 shape=shape,
+                dtype=tf.float32,
                 minval=-stdev * tf.sqrt(3),
                 maxval=stdev * tf.sqrt(3)
             )

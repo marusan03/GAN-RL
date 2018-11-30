@@ -52,7 +52,8 @@ def Linear(
                 stdev = _weights_stdev
             return tf.random_uniform(
                 shape=shape,
-                minval=-stdev * tf.sqrt(3),
+                dtype=tf.float32,
+                minval=-1*stdev * tf.sqrt(3),
                 maxval=stdev * tf.sqrt(3)
             )
 
