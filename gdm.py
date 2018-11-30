@@ -285,8 +285,8 @@ class GDM():
             [pre_state, post_state], axis=self.concat_dim, name='real_state')
         fake_state = tf.concat(
             [pre_state, predicted_state], axis=self.concat_dim, name='fake_state')
-        print(real_state.shape)
-        print(fake_state.shape)
+        print(pre_state.shape)
+        print(predicted_state.shape)
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
