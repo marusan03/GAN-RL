@@ -26,9 +26,9 @@ class RP():
         self.concat_dim = 1
 
         self.action = tf.placeholder(
-            tf.int32, shape=[None, self.lookahead], name='actions')
+            tf.int32, shape=[None, self.lookahead+1], name='actions')
         self.reward = tf.placeholder(
-            tf.float32, shape=[None, self.lookahead-1], name='rewards')
+            tf.float32, shape=[None, self.lookahead+1], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
