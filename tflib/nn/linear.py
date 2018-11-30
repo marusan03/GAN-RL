@@ -53,8 +53,8 @@ def Linear(
             return tf.random_uniform(
                 shape=shape,
                 dtype=tf.float32,
-                minval=-1*stdev * tf.sqrt(3),
-                maxval=stdev * tf.sqrt(3)
+                minval=-1*stdev * tf.sqrt(3.),
+                maxval=stdev * tf.sqrt(3.)
             )
 
         if initialization == 'lecun':  # and input_dim != output_dim):

@@ -29,8 +29,8 @@ def Deconv2D(
             return tf.random_uniform(
                 shape=shape,
                 dtype=tf.float32,
-                minval=-stdev * tf.sqrt(3),
-                maxval=stdev * tf.sqrt(3)
+                minval=-stdev * tf.sqrt(3.),
+                maxval=stdev * tf.sqrt(3.)
             )
 
         fan_in = input_dim * filter_size**2 / (stride**2)
