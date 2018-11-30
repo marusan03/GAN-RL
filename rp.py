@@ -79,12 +79,12 @@ class RP():
         # (None, 512)
 
         action_one_hot = tf.one_hot(
-            action, self.num_actions, 1., 0., name='action_one_hot')
+            action, self.num_actions, name='action_one_hot')
 
         action_one_hot = tf.layers.flatten(
             action_one_hot, name='action_one_hot_flatten')
 
-        output = tf.concat([output, action], self.concat_dim)
+        output = tf.concat([output, action_one_hot], self.concat_dim)
         # (None, 512+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
