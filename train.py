@@ -143,6 +143,7 @@ def train(sess, config):
         screen, reward, terminal = env.act(action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(norm_frame(screen))
+        print(reward)
         memory.add(screen, reward, action, terminal)
 
         # Train
@@ -181,6 +182,7 @@ def train(sess, config):
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
                 rew_batch = np.concatenate((rew, reward_rew), axis=0)
+                print(rew_batch[0])
 
                 trajectories = gdm.get_state(
                     obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
