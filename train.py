@@ -187,7 +187,7 @@ def train(sess, config):
                     obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
 
                 rp_summary = rp.train(
-                    trajectories, act_batch, reward_labels.astype(np.int32))
+                    trajectories, act_batch, reward_labels)
                 writer.add_summary(rp_summary, step)
 
         # reinit
