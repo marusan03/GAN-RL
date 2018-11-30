@@ -150,7 +150,7 @@ def train(sess, config):
             if step % config.train_frequency == 0:
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
-                s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
+                s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
@@ -167,10 +167,8 @@ def train(sess, config):
             if config.gats and step % gdm_train_frequency == 0:
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
-                print(state_batch.dtype, act_batch.shape,
-                      next_state_batch.dtype)
                 gdm.summary, disc_summary = gdm.train(
-                    state_batch, act_batch, next_state_batch)
+                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
