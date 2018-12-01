@@ -287,11 +287,11 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     leaves_Q_max = config.discount ** (config.lookahead) * \
         np.max(leaves_q_value, axis=1)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
-    print(leaves_act_max.shape, leaves_act_max[0])
     if sample2 < epsiron:
         leaves_act_max = np.random.randint(
             0, config.num_actions, leaves_act_max.shape)
-    reward_actions = np.concatenate((tree_base, leaves_act_max), axis=1)
+    reward_actions = np.concatenate(
+        (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
