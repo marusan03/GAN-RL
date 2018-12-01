@@ -132,7 +132,7 @@ def train(sess, config):
         if random.random() < epsilon:
             action = random.randrange(env.action_size)
         else:
-            if config.gats and (step >= config.gan_dqn_learn_start//1000):
+            if config.gats and (step >= config.gan_dqn_learn_start):
                 action = MCTS_planning(
                     gdm, rp, agent, np.expand_dims(history.get(), axis=0), leaves_size, tree_base, config, exploration, step)
             else:
