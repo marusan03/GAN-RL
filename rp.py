@@ -58,16 +58,17 @@ class RP():
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, weight_norm_scale=0.0001, stride=4, padding='VALID', data_format=self.data_format)
-        output = tf.nn.leaky_relu(output, -0.1)
+        output = tf.nn.relu(output, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.2', 32, 64, 4, output, weight_norm_scale=0.0001, stride=2, padding='VALID', data_format=self.data_format)
-        output = tf.nn.leaky_relu(output, -0.1)
+        output = tf.nn.relu(output, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.3', 64, 128, 3, output, weight_norm_scale=0.0001, stride=1, padding='VALID', data_format=self.data_format)
+        output = tf.nn.relu(output, name='ralu3')
         # (None, 7, 7, 128)
 
         output = tf.layers.flatten(output, name='RP_Flatten')
@@ -75,7 +76,7 @@ class RP():
 
         output = lib.nn.linear.Linear(
             'RP_Dence.1', 6272, 512, output, weight_norm_scale=0.0001)
-        output = tf.nn.relu(output)
+        output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
         action_one_hot = tf.one_hot(

@@ -245,7 +245,6 @@ class GDM():
             'Conv.4', ngf * 4, 16, 3, output, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=1, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, training=is_training, name='BN4')
-        output = tf.nn.leaky_relu(output, -0.2)
         # (None, 5, 5, 16)
 
         output = tf.layers.flatten(output, name='flatten')
@@ -318,6 +317,7 @@ class GDM():
             #     gradient_penalty = tf.reduce_mean(
             #         (slopes-1.)**2, name='gradient_penalty')
             #     disc_loss += self.lamda * gradient_penalty
+
             with tf.name_scope('L1_L2_loss'):
                 difference = fake_state[:, -1*self.lookahead:, ...] - post_state
                 l1_loss = tf.reduce_mean(tf.abs(difference))

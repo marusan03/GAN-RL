@@ -163,7 +163,7 @@ def train(sess, config):
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
 
-        if step > config.gan_learn_start:
+        if step > config.gan_learn_start and memory.can_sample(config.gan_batch_size):
             if config.gats and step % gdm_train_frequency == 0:
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
