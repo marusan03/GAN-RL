@@ -36,7 +36,7 @@ class AgentConfig(object):
 
 
 class EnvironmentConfig(object):
-    env_name = 'PongNoFrameskip-v3'
+    env_name = 'PongNoFrameskip-v4'
 
     screen_width = 84
     screen_height = 84

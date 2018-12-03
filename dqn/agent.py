@@ -32,9 +32,9 @@ class Agent():
             self.s_t_plas_1 = tf.transpose(
                 self.s_t_plas_1, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
-        with tf.variable_scope('dqn'):
+        with tf.name_scope('dqn'):
             self.q_value, self.q_action = self.build_model(self.s_t)
-        with tf.variable_scope('target_network'):
+        with tf.name_scope('target_network'):
             self.target_q_value, _ = self.build_model(self.s_t_plas_1)
         with tf.name_scope('update_target_q_network'):
             self.update_target_q_network_op = self.copy_weight()
@@ -81,7 +81,7 @@ class Agent():
         self.target_q_t = tf.placeholder(
             dtype=tf.float32, shape=[None], name='target_q_t')
         self.action = tf.placeholder(
-            dtype=tf.uint8, shape=[None], name='action')
+            dtype=tf.int64, shape=[None], name='action')
 
         action_one_hot = tf.one_hot(
             self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
@@ -100,7 +100,7 @@ class Agent():
         dqn_summary = tf.summary.scalar('dqn_loss', loss)
 
         self.learning_rate_step = tf.placeholder(
-            'int64', None, name='learning_rate_step')
+            tf.int64, None, name='learning_rate_step')
         learning_rate_op = tf.maximum(self.learning_rate_minimum,
                                       tf.train.exponential_decay(
                                           self.learning_rate,
