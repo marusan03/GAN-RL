@@ -32,9 +32,9 @@ class Agent():
             self.s_t_plas_1 = tf.transpose(
                 self.s_t_plas_1, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
-        with tf.name_scope('dqn'):
+        with tf.variable_scope('dqn'):
             self.q_value, self.q_action = self.build_model(self.s_t)
-        with tf.name_scope('target_network'):
+        with tf.variable_scope('target_network'):
             self.target_q_value, _ = self.build_model(self.s_t_plas_1)
         with tf.name_scope('update_target_q_network'):
             self.update_target_q_network_op = self.copy_weight()
@@ -57,6 +57,9 @@ class Agent():
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
         update_target_q_network_op = [target_q_network_weights[i].assign(
             dqn_weights[i]) for i in range(len(dqn_weights))]
+        print(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='dqn'))
+        print(tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn'))
         return update_target_q_network_op
 
     def updated_target_q_network(self):
