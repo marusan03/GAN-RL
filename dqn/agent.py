@@ -56,11 +56,13 @@ class Agent():
         target_q_network_weights = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
         update_target_q_network_op = [target_q_network_weights[i].assign(
-            dqn_weights[i]) for i in range(len(dqn_weights))]
-        print(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='dqn') == tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn'))
-        print(tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network'))
+            dqn_weights[i]) for i in range(len(dqn_weights)+1)]
+        a = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='target_network')
+        b = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn')
+        for i in range(len(dqn_weights)):
+            print(a[i], b[i])
         return update_target_q_network_op
 
     def updated_target_q_network(self):
