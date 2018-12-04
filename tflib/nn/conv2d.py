@@ -26,6 +26,7 @@ def Conv2D(
 ):
 
     with tf.variable_scope(name):
+        shape = None
 
         def uniform(stdev, shape):
             return tf.random_uniform(
@@ -50,13 +51,14 @@ def Conv2D(
             )
         else:
             filter_values = initializer
+            shape = (filter_size, filter_size, input_dim, output_dim)
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
             scale=weight_norm_scale)
 
         filters = tf.get_variable(
-            'filters', shape=(filter_size, filter_size, input_dim, output_dim), initializer=filter_values, regularizer=regularizer)
+            'filters', shape=shape, initializer=filter_values, regularizer=regularizer)
 
         # stride
         strides = []

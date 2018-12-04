@@ -46,6 +46,7 @@ def Linear(
     initialization: None, `lecun`, 'glorot', `he`, 'glorot_he', `orthogonal`, `("uniform", range)`
     """
     with tf.variable_scope(name):
+        shape = None
 
         def uniform(stdev, shape):
             if _weights_stdev is not None:
@@ -118,13 +119,14 @@ def Linear(
 
         else:
             weight_values = initializer
+            shape = (input_dim, output_dim)
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
             scale=weight_norm_scale)
 
         weight = tf.get_variable(
-            'weights', shape=(input_dim, output_dim), initializer=weight_values, regularizer=regularizer)
+            'weights', shape=shape, initializer=weight_values, regularizer=regularizer)
 
         if spectral_norm:
             result = tf.matmul(inputs, spectral_normalization(
