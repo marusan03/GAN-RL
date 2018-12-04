@@ -138,10 +138,11 @@ def train(sess, config):
             else:
                 action = agent.get_action(
                     norm_frame_Q(unnorm_frame(np.expand_dims(history.get(), axis=0))))
+                print(norm_frame_Q(unnorm_frame(
+                    np.expand_dims(history.get(), axis=0))))
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
-        print(screen)
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(norm_frame(screen))
         memory.add(screen, action, reward, terminal)
