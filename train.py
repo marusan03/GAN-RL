@@ -130,7 +130,7 @@ def train(sess, config):
         # ε-greedy
         epsilon = exploration.value(step)
         if random.random() < epsilon:
-            action = random.randrange(env.action_size)
+            action = random.randrange(config.num_actions)
         else:
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action = MCTS_planning(
