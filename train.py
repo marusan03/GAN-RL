@@ -138,8 +138,6 @@ def train(sess, config):
             else:
                 action = agent.get_action(
                     norm_frame_Q(unnorm_frame(np.expand_dims(history.get(), axis=0))))
-                print(norm_frame_Q(unnorm_frame(
-                    np.expand_dims(history.get(), axis=0))))
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
@@ -156,6 +154,8 @@ def train(sess, config):
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
+                print(s_t.dtype, act_batch.dtype,
+                      rew_batch.dtype, s_t_plus_1.dtype, terminal_batch.dtype)
 
                 writer.add_summary(dqn_summary, step)
                 total_loss += loss
