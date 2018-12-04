@@ -141,6 +141,7 @@ def train(sess, config):
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
+        print(type(screen), type(reward), type(terminal))
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(norm_frame(screen))
         memory.add(screen, action, reward, terminal)
@@ -162,7 +163,6 @@ def train(sess, config):
 
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
-                print(' [*] Updated target q-network')
 
         if step > config.gan_learn_start and memory.can_sample(config.gan_batch_size):
             if config.gats and step % gdm_train_frequency == 0:
