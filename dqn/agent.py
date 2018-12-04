@@ -89,7 +89,7 @@ class Agent():
         action_one_hot = tf.one_hot(
             self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
         q_acted = tf.reduce_sum(
-            self.q_value * action_one_hot, reduction_indices=1, name='q_acted')
+            self.q_value * action_one_hot, axis=1, name='q_acted')
 
         delta = self.target_q_t - q_acted
 
@@ -121,7 +121,8 @@ class Agent():
 
     def build_model(self, state):
 
-        initializer = tf.truncated_normal_initializer(0, 0.02)
+        # initializer = tf.truncated_normal_initializer(0, 0.02)
+        initializer = None
 
         output = lib.nn.conv2d.Conv2D(
             'Conv1', self.history_length, 32, 8, state, initializer=initializer, stride=4, padding='VALID', data_format=self.data_format)
@@ -141,7 +142,8 @@ class Agent():
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        # dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        dence_initializer = None
 
         output = lib.nn.linear.Linear(
             'Dence1', 3136, 512, output, initializer=dence_initializer)
