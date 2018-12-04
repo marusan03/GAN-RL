@@ -69,7 +69,6 @@ class Agent():
     def train(self, state, action, reward, next_state, terminal, step):
         max_q_t_plus_1 = np.max(
             self.target_q_value.eval({self.s_t_plas_1: next_state}), axis=1)
-        print(reward.shape)
 
         target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
 
@@ -89,8 +88,8 @@ class Agent():
 
         action_one_hot = tf.one_hot(
             self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
-        q_acted = tf.reduce_sum(self.q_value * action_one_hot,
-                                axis=1, name='q_acted')
+        q_acted = tf.reduce_sum(
+            self.q_value * action_one_hot, reduction_indices=1, name='q_acted')
 
         delta = self.target_q_t - q_acted
 
