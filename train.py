@@ -150,7 +150,6 @@ def train(sess, config):
             if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
-                print(agent.get_q_value(s_t))
                 s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
@@ -163,6 +162,7 @@ def train(sess, config):
 
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
+                print(' [*] Updated target q-network')
 
         if step > config.gan_learn_start and memory.can_sample(config.gan_batch_size):
             if config.gats and step % gdm_train_frequency == 0:
