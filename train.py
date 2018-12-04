@@ -102,7 +102,7 @@ def train(sess, config):
     # model load, if exist ckpt.
     load_model(sess, saver, checkpoint_dir)
 
-    agent.updated_target_q_network()
+    # agent.updated_target_q_network()
 
     writer = tf.summary.FileWriter(model_dir, sess.graph)
 
