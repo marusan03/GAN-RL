@@ -150,6 +150,7 @@ def train(sess, config):
             if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
+                print(agent.get_q_value(s_t), agent.get_q_value(s_t).shape)
                 s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
                 print(s_t)
 
