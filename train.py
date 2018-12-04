@@ -147,7 +147,7 @@ def train(sess, config):
 
         # Train
         if step > config.learn_start:
-            if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
+            if step % config.train_frequency == 0 and memory.can_sample(config.history_length):
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
                 s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
