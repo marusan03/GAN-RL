@@ -13,6 +13,7 @@ def Conv2D(
     output_dim,
     filter_size,
     inputs,
+    initializer=None,
     he_init=True,
     stride=1,
     weight_norm_scale=0.,
@@ -37,15 +38,18 @@ def Conv2D(
         fan_in = input_dim * filter_size**2
         fan_out = output_dim * filter_size**2 / (stride**2)
 
-        if he_init:
-            filters_stdev = np.sqrt(4./(fan_in+fan_out))
-        else:  # Normalized init (Glorot & Bengio)
-            filters_stdev = np.sqrt(2./(fan_in+fan_out))
+        if initializer == None:
+            if he_init:
+                filters_stdev = np.sqrt(4./(fan_in+fan_out))
+            else:  # Normalized init (Glorot & Bengio)
+                filters_stdev = np.sqrt(2./(fan_in+fan_out))
 
-        filter_values = uniform(
-            filters_stdev,
-            (filter_size, filter_size, input_dim, output_dim)
-        )
+            filter_values = uniform(
+                filters_stdev,
+                (filter_size, filter_size, input_dim, output_dim)
+            )
+        else:
+            filter_values = initializer
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(

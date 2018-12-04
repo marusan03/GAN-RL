@@ -4,6 +4,10 @@ import tensorflow as tf
 import tensorflow.layers
 import numpy as np
 
+import tflib as lib
+import tflib.nn.conv2d
+import tflib.nn.linear
+
 
 class Agent():
 
@@ -117,23 +121,21 @@ class Agent():
 
     def build_model(self, state):
 
-        if self.data_format == 'NCHW':
-            data_format = 'channels_first'
-        else:
-            data_format = 'channels_last'
-
         initializer = tf.truncated_normal_initializer(0, 0.02)
 
-        output = tf.layers.conv2d(
-            state, 32, 8, strides=4, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.1')
+        output = lib.nn.conv2d.Conv2D(
+            'Conv1', self.history_length, 32, 8, state, initializer=initializer, stride=4, padding='VALID', data_format=self.data_format)
+        output = tf.nn.relu(output, name='Relu1')
         # (None, 20, 20, 32)
 
-        output = tf.layers.conv2d(
-            output, 32 * 2, 4,  strides=2, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.2')
+        output = lib.nn.conv2d.Conv2D(
+            'Conv2', 32, 32*2, 4, output, initializer=initializer, stride=2, padding='VALID', data_format=self.data_format)
+        output = tf.nn.relu(output, name='Relu2')
         # (None, 9, 9, 64)
 
-        output = tf.layers.conv2d(
-            output, 32 * 2, 3, strides=1, padding='VALID', data_format=data_format, activation=tf.nn.relu, kernel_initializer=initializer, name='DQN_Conv.3')
+        output = lib.nn.conv2d.Conv2D(
+            'Conv3', 32*2, 32*2, 3, output, initializer=initializer, stride=1, padding='VALID', data_format=self.data_format)
+        output = tf.nn.relu(output, name='Relu3')
         # (None, 7, 7, 64)
 
         output = tf.layers.flatten(output)
@@ -141,12 +143,13 @@ class Agent():
 
         dence_initializer = tf.random_normal_initializer(stddev=0.02)
 
-        output = tf.layers.dense(
-            output, 512, activation=tf.nn.relu, kernel_initializer=dence_initializer, name='DQN_Dence.1')
+        output = lib.nn.linear.Linear(
+            'Dence1', 3136, 512, output, initializer=dence_initializer)
+        output = tf.nn.relu(output, name='Relu4')
         # (None, 512)
 
-        q_value = tf.layers.dense(
-            output, self.num_actions, kernel_initializer=dence_initializer, name='DQN_Dence.2')
+        q_value = lib.nn.linear.Linear(
+            'Dence2', 512, self.num_actions, output, initializer=dence_initializer)
         # (None, num_actions)
 
         q_action = tf.argmax(q_value, axis=1)

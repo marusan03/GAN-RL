@@ -10,6 +10,7 @@ def Deconv2D(
     output_dim,
     filter_size,
     inputs,
+    initializer=None,
     he_init=True,
     stride=2,
     weight_norm_scale=0.,
@@ -34,17 +35,21 @@ def Deconv2D(
             )
 
         fan_in = input_dim * filter_size**2 / (stride**2)
-        fan_out = output_dim * filter_size**2
+        fan_out = output_dim * filter_size ** 2
 
-        if he_init:
-            filters_stdev = np.sqrt(4./(fan_in+fan_out))
-        else:  # Normalized init (Glorot & Bengio)
-            filters_stdev = np.sqrt(2./(fan_in+fan_out))
+        if initializer == None:
 
-        filter_values = uniform(
-            filters_stdev,
-            (filter_size, filter_size, output_dim, input_dim)
-        )
+            if he_init:
+                filters_stdev = np.sqrt(4./(fan_in+fan_out))
+            else:  # Normalized init (Glorot & Bengio)
+                filters_stdev = np.sqrt(2./(fan_in+fan_out))
+
+            filter_values = uniform(
+                filters_stdev,
+                (filter_size, filter_size, output_dim, input_dim)
+            )
+        else:
+            filter_values = initializer
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
