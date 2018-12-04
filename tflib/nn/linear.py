@@ -41,7 +41,6 @@ def Linear(
         weight_norm_scale=0.,
         spectral_norm=False,
         update_collection=None,
-        gain=1.
 ):
     """
     initialization: None, `lecun`, 'glorot', `he`, 'glorot_he', `orthogonal`, `("uniform", range)`
@@ -119,8 +118,6 @@ def Linear(
 
         else:
             weight_values = initializer
-
-        weight_values *= gain
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
