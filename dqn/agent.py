@@ -63,7 +63,8 @@ class Agent():
         self.sess.run(self.update_target_q_network_op)
 
     def train(self, state, action, reward, next_state, terminal, step):
-        terminal = np.array(terminal) + 0.
+        print(state[0, 0], state.shape, action[0],
+              reward[0], next_state[0, 0], next_state.shape)
         max_q_t_plus_1 = np.max(self.sess.run(
             self.target_q_value, feed_dict={self.s_t_plas_1: next_state}), axis=1)
 

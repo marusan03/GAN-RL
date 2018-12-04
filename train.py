@@ -154,8 +154,6 @@ def train(sess, config):
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
-                print(s_t.dtype, act_batch.dtype,
-                      rew_batch.dtype, s_t_plus_1.dtype, terminal_batch.dtype)
 
                 writer.add_summary(dqn_summary, step)
                 total_loss += loss
