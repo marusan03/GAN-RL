@@ -96,13 +96,13 @@ def train(sess, config):
     memory = ReplayMemory(config)
     history = History(config)
 
-    sess.run(tf.global_variables_initializer())
+    tf.global_variables_initializer().run()
     saver = tf.train.Saver(max_to_keep=30)
 
     # model load, if exist ckpt.
     load_model(sess, saver, checkpoint_dir)
 
-    # agent.updated_target_q_network()
+    agent.updated_target_q_network()
 
     writer = tf.summary.FileWriter(model_dir, sess.graph)
 
