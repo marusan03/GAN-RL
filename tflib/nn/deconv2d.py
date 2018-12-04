@@ -56,7 +56,7 @@ def Deconv2D(
             scale=weight_norm_scale)
 
         filters = tf.get_variable(
-            'filters', initializer=filter_values, regularizer=regularizer)
+            'filters', shape=(filter_size, filter_size, output_dim, input_dim), initializer=filter_values, regularizer=regularizer)
 
         # calculated output dimension
         if data_format == 'NHWC':

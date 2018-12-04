@@ -56,7 +56,7 @@ def Conv2D(
             scale=weight_norm_scale)
 
         filters = tf.get_variable(
-            'filters', initializer=filter_values, regularizer=regularizer)
+            'filters', shape=(filter_size, filter_size, input_dim, output_dim), initializer=filter_values, regularizer=regularizer)
 
         # stride
         strides = []

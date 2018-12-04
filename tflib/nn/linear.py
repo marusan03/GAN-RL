@@ -127,7 +127,7 @@ def Linear(
             scale=weight_norm_scale)
 
         weight = tf.get_variable(
-            'weights', initializer=weight_values, regularizer=regularizer)
+            'weights', shape=(input_dim, output_dim), initializer=weight_values, regularizer=regularizer)
 
         if spectral_norm:
             result = tf.matmul(inputs, spectral_normalization(
