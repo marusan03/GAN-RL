@@ -65,6 +65,7 @@ class Agent():
     def train(self, state, action, reward, next_state, terminal, step):
         max_q_t_plus_1 = np.max(
             self.target_q_value.eval({self.s_t_plas_1: next_state}), axis=1)
+        print(max_q_t_plus_1[0:5])
 
         target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
 
