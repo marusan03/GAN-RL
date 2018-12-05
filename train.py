@@ -147,6 +147,7 @@ def train(sess, config):
 
         # Train
         if step > config.learn_start:
+            print(epsilon)
             if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
