@@ -52,7 +52,6 @@ class Agent():
     def get_q_value(self, state):
         q_value = self.sess.run(self.q_value,
                                 feed_dict={self.s_t: state})
-        print(q_value.shape)
         return q_value
 
     def copy_weight(self):
@@ -89,6 +88,7 @@ class Agent():
 
         action_one_hot = tf.one_hot(
             self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
+        print(self.action[0], action_one_hot[0])
         q_acted = tf.reduce_sum(
             self.q_value * action_one_hot, axis=1, name='q_acted')
 
