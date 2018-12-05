@@ -129,6 +129,7 @@ def train(sess, config):
 
         # ε-greedy
         epsilon = exploration.value(step)
+        print(exploration.value(10000000))
         if random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
@@ -147,7 +148,6 @@ def train(sess, config):
 
         # Train
         if step > config.learn_start:
-            print(epsilon)
             if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                     config.batch_size, config.lookahead)
