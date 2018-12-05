@@ -47,6 +47,7 @@ class Agent():
 
     def get_action(self, state):
         action = self.sess.run(self.q_action, feed_dict={self.s_t: state})
+        print(action.shape)
         return action
 
     def get_q_value(self, state):
