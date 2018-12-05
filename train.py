@@ -129,8 +129,7 @@ def train(sess, config):
 
         # ε-greedy
         epsilon = exploration.value(step)
-        print(exploration.value(10000000))
-        if random.random() < epsilon:
+        if step < config.learn_start or random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
             if config.gats and (step >= config.gan_dqn_learn_start):
@@ -164,8 +163,8 @@ def train(sess, config):
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
 
-        if step > config.gan_learn_start and memory.can_sample(config.gan_batch_size):
-            if config.gats and step % gdm_train_frequency == 0:
+        if step > config.gan_learn_start and config.gats:
+            if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
                 gdm.summary, disc_summary = gdm.train(
@@ -173,7 +172,7 @@ def train(sess, config):
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
-            if config.gats and step % rp_train_frequency == 0:
+            if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 obs, act, rew = memory.reward_sample(
                     config.rp_batch_size, config.lookahead)
                 reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
