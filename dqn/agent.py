@@ -88,7 +88,6 @@ class Agent():
 
         action_one_hot = tf.one_hot(
             self.action, self.num_actions, 1.0, 0.0, name='action_one_hot')
-        print(self.action[0], action_one_hot[0])
         q_acted = tf.reduce_sum(
             self.q_value * action_one_hot, axis=1, name='q_acted')
 
