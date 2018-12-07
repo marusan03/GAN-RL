@@ -115,7 +115,7 @@ def train(sess, config):
 
     # init state
     for _ in range(config.history_length):
-        history.add(norm_frame(screen))
+        history.add(screen)
 
     start_step = step_op.eval()
 
@@ -132,17 +132,18 @@ def train(sess, config):
         if step < config.learn_start or random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
+            current_state = np.expand_dims(history.get(), axis=0)
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action = MCTS_planning(
-                    gdm, rp, agent, np.expand_dims(history.get(), axis=0), leaves_size, tree_base, config, exploration, step)
+                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, step)
             else:
                 action = agent.get_action(
-                    norm_frame_Q(unnorm_frame(np.expand_dims(history.get(), axis=0))))
+                    norm_frame_Q(current_state))
 
         # Observe
         screen, reward, terminal = env.act(action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
-        history.add(norm_frame(screen))
+        history.add(screen)
         memory.add(screen, action, reward, terminal)
 
         # Train

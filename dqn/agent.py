@@ -50,8 +50,8 @@ class Agent():
         return action
 
     def get_q_value(self, state):
-        q_value = self.sess.run(self.q_value,
-                                feed_dict={self.s_t: state})
+        q_value = self.sess.run(
+            self.q_value, feed_dict={self.s_t: state})
         return q_value
 
     def copy_weight(self):
