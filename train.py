@@ -128,8 +128,11 @@ def train(sess, config):
             ep_rewards, actions = [], []
 
         # ε-greedy
-        epsilon = exploration.value(step)
-        if step < config.learn_start or random.random() < epsilon:
+        # epsilon = exploration.value(step)
+        epsilon = config.epsilon_end + max(0., (config.epsilon_start - config.epsilon_end) * (
+            config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t)
+        # if step < config.learn_start or random.random() < epsilon:
+        if random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
             current_state = np.expand_dims(history.get(), axis=0)
