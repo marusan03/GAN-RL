@@ -7,6 +7,7 @@ import numpy as np
 
 from dqn.environment import GymEnvironment
 from dqn.replay_memory import ReplayMemory
+from dqn.replay_memory_dqn import ReplayMemoryDQN
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
@@ -93,7 +94,8 @@ def train(sess, config):
         tree_base = base_generator()
 
     agent = Agent(sess, config, num_actions=config.num_actions)
-    memory = ReplayMemory(config)
+    # memory = ReplayMemory(config)
+    memory = ReplayMemoryDQN(config, model_dir)
     history = History(config)
 
     tf.global_variables_initializer().run()
@@ -151,9 +153,11 @@ def train(sess, config):
 
         # Train
         if step > config.learn_start:
-            if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
-                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
-                    config.batch_size, config.lookahead)
+            # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
+            if step % config.train_frequency == 0:
+                # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
+                #     config.batch_size, config.lookahead)
+                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
                 s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
