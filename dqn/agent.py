@@ -113,11 +113,8 @@ class Agent():
                                           self.learning_rate_decay,
                                           staircase=True))
 
-        dqn_params = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='dqn')
-
         dqn_op = tf.train.RMSPropOptimizer(
-            learning_rate_op, momentum=0.95, epsilon=0.01).minimize(loss, var_list=dqn_params)
+            learning_rate_op, momentum=0.95, epsilon=0.01).minimize(loss)
         return dqn_op, loss, dqn_summary
 
     def build_model(self, state):
