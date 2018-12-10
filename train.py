@@ -149,7 +149,8 @@ def train(sess, config):
         screen, reward, terminal = env.act(action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
-        memory.add(screen, action, reward, terminal)
+        # memory.add(screen, action, reward, terminal)
+        memory.add(norm_state_Q_GAN(screen), action, reward, terminal)
 
         # Train
         if step > config.learn_start:
@@ -158,7 +159,7 @@ def train(sess, config):
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
-                s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
+                # s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
