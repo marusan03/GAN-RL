@@ -149,7 +149,7 @@ def train(sess, config):
         screen, reward, terminal = env.act(action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
-        memory.add(screen, action, reward, terminal)
+        memory.add(screen, reward, action, terminal)
         # memory.add(norm_state_Q_GAN(screen), action, reward, terminal)
 
         # Train
