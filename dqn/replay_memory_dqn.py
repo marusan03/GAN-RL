@@ -165,7 +165,7 @@ class ReplayMemoryDQN:
                         self.nonzero_rewards, size=1)[0] + random.randint(0, self.lookahead)
                 else:
                     index = random.randint(
-                        self.history_length + self.lookahead, self.count - 1)
+                        self.history_length + self.lookahead, self.count - 1 - self.lookahead)
                 # if wraps over current pointer, then get new one
                 if index >= self.current and index - (self.history_length + self.lookahead) < self.current:
                     continue
