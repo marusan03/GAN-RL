@@ -180,6 +180,7 @@ class ReplayMemoryDQN:
                 index, self.lookahead)
             indexes.append(index)
 
+        print(np.array([indexes, indexes + self.lookahead]).shape)
         actions = self.actions[[indexes, indexes + self.lookahead]]
         rewards = self.rewards[[indexes, indexes + self.lookahead]]
 
