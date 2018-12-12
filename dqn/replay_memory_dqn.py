@@ -142,7 +142,7 @@ class ReplayMemoryDQN:
             indexes.append(index)
 
         if self.lookahead == 1:
-            actions = self.actions[indexes]
+            actions = np.expand_dims(self.actions[indexes], axis=1)
         else:
             actions = self.actions[[[indexes, indexes + self.lookahead - 1]]]
 
