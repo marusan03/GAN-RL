@@ -113,7 +113,7 @@ class ReplayMemoryDQN:
         assert self.count > batch_size
 
         indexes = []
-        while True:
+        while len(indexes) < batch_size:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
@@ -131,6 +131,7 @@ class ReplayMemoryDQN:
 
             # NB! having index first is fastest in C-order matrices
             state = self.getState(index, lookahead)
+            print(state.shape)
             self.prestates[len(indexes), ...] = state[:self.history_length]
             self.poststates[len(indexes), ...] = state[self.history_length:]
             indexes.append(index)
@@ -149,7 +150,7 @@ class ReplayMemoryDQN:
         assert self.count > batch_size
 
         indexes = []
-        while True:
+        while len(indexes) < batch_size:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
