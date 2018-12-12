@@ -22,6 +22,8 @@ class ReplayMemoryDQN:
         self.history_length = config.history_length
         self.dims = (config.screen_height, config.screen_width)
         self.batch_size = config.batch_size
+        self.gan_batch_size = config.gan_batch_size
+        self.rp_batch_size = config.rp_batch_size
         self.count = 0
         self.current = 0
         # reward predictor
@@ -33,6 +35,10 @@ class ReplayMemoryDQN:
             (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
         self.poststates = np.empty(
             (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.gan_states = np.empty(
+            (self.gan_batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.reward_states = np.empty(
+            (self.rp_batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add(self, screen, reward, action, terminal):
         assert screen.shape == self.dims
@@ -130,10 +136,8 @@ class ReplayMemoryDQN:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            state = self.getState(index, lookahead)
-            print(state.shape)
-            self.prestates[len(indexes), ...] = state[:self.history_length]
-            self.poststates[len(indexes), ...] = state[self.history_length:]
+            self.gan_states[len(indexes), ...] = self.getState(
+                index, lookahead)
             indexes.append(index)
 
         if lookahead == 1:
@@ -142,9 +146,9 @@ class ReplayMemoryDQN:
             actions = self.actions[[[indexes, indexes + lookahead - 1]]]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, np.transpose(self.poststates, (0, 2, 3, 1))
+            return np.transpose(self.gan_states[:self.history_length], (0, 2, 3, 1)), actions, np.transpose(self.gan_states[self.history_length:], (0, 2, 3, 1))
         else:
-            return self.prestates, actions, self.poststates
+            return self.gan_states[:self.history_length], actions, self.gan_states[self.history_length:]
 
     def reward_sample(self, batch_size, lookahead, nonzero=False):
         assert self.count > batch_size
@@ -171,17 +175,17 @@ class ReplayMemoryDQN:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            state = self.getState(index, lookahead)
-            self.prestates[len(indexes), ...] = state[:self.history_length]
+            self.reward_states[len(indexes), ...] = self.getState(
+                index, lookahead)
             indexes.append(index)
 
         actions = self.actions[[[indexes, indexes + lookahead]]]
-        rewards = self.rewards[indexes]
+        rewards = self.rewards[[[indexes, indexes + lookahead]]]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, np.transpose(self.poststates, (0, 2, 3, 1))
+            return np.transpose(self.prestates[:self.history_length], (0, 2, 3, 1)), actions, rewards
         else:
-            return self.prestates, actions, rewards
+            return self.reward_states[:self.history_length], actions, rewards
 
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count
