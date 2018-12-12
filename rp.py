@@ -28,7 +28,7 @@ class RP():
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead+1], name='actions')
         self.reward = tf.placeholder(
-            tf.int32, shape=[None, self.lookahead+1, 1], name='rewards')
+            tf.int32, shape=[None, self.lookahead+1], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
@@ -97,10 +97,10 @@ class RP():
     def build_training_op(self, state, action, reward):
         loss = 0.
         for ind in range(self.lookahead + 1):
-            outputs = self.predicted_reward[:,
-                                            self.num_rewards*ind: self.num_rewards*(ind + 1)]
+            outputs = self.predicted_reward[
+                :, self.num_rewards*ind: self.num_rewards*(ind + 1)]
             loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=reward[:, ind, 0], logits=outputs))
+                labels=reward[:, ind], logits=outputs))
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(
