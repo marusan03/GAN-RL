@@ -24,6 +24,9 @@ class ReplayMemoryDQN:
         self.batch_size = config.batch_size
         self.count = 0
         self.current = 0
+        # reward predictor
+        self.nonzero_rewards = []
+        self.overwrite_index = None
 
         # pre-allocate prestates and poststates for minibatch
         self.prestates = np.empty(
@@ -38,21 +41,37 @@ class ReplayMemoryDQN:
         self.rewards[self.current] = reward
         self.screens[self.current, ...] = screen
         self.terminals[self.current] = terminal
+
+        if(self.overwrite_index != None and self.current == self.nonzero_rewards[self.overwrite_index]):
+            self.nonzero_rewards.pop(self.overwrite_index)
+            if self.overwrite_index >= len(self.nonzero_rewards):
+                self.overwrite_index = None
+
+        if (self.current + 1) >= self.memory_size and len(self.nonzero_rewards):
+            self.overwrite_index = 0
+
+        if (reward != 0):
+            if self.overwrite_index == None:
+                self.nonzero_rewards.append(self.current)
+            else:
+                self.nonzero_rewards.insert(self.overwrite_index, self.current)
+                self.overwrite_index += 1
+
         self.count = max(self.count, self.current + 1)
         self.current = (self.current + 1) % self.memory_size
 
-    def getState(self, index):
+    def getState(self, index, lookahead=0):
         assert self.count > 0, "replay memory is empty, use at least --random_steps 1"
         # normalize index to expected range, allows negative indexes
         index = index % self.count
         # if is not in the beginning of matrix
         if index >= self.history_length - 1:
             # use faster slicing
-            return self.screens[(index - (self.history_length - 1)):(index + 1), ...]
+            return self.screens[(index - ((self.history_length + lookahead) - 1)):(index + 1), ...]
         else:
             # otherwise normalize indexes and use slower list based access
             indexes = [(index - i) %
-                       self.count for i in reversed(range(self.history_length))]
+                       self.count for i in reversed(range(self.history_length + lookahead))]
             return self.screens[indexes, ...]
 
     def sample(self):
@@ -89,6 +108,82 @@ class ReplayMemoryDQN:
                 rewards, np.transpose(self.poststates, (0, 2, 3, 1)), terminals
         else:
             return self.prestates, actions, rewards, self.poststates, terminals
+
+    def GAN_sample(self, batch_size, lookahead):
+        assert self.count > batch_size
+
+        indexes = []
+        while True:
+            # find random index
+            while True:
+                # sample one index (ignore states wraping over
+                index = random.randint(
+                    self.history_length + lookahead, self.count - 1)
+                # if wraps over current pointer, then get new one
+                if index >= self.current and index - (self.history_length + lookahead) < self.current:
+                    continue
+                # if wraps over episode end, then get new one
+                # NB! poststate (last screen) can be terminal state!
+                if self.terminals[(index - (self.history_length + lookahead)):index].any():
+                    continue
+                # otherwise use this index
+                break
+
+            # NB! having index first is fastest in C-order matrices
+            state = self.getState(index, lookahead)
+            self.prestates[len(indexes), ...] = state[:self.history_length]
+            self.poststates[len(indexes), ...] = state[self.history_length:]
+            indexes.append(index)
+
+        if lookahead == 1:
+            actions = self.actions[indexes]
+        else:
+            actions = self.actions[[[indexes, indexes + lookahead - 1]]]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, np.transpose(self.poststates, (0, 2, 3, 1))
+        else:
+            return self.prestates, actions, self.poststates
+
+    def reward_sample(self, batch_size, lookahead, nonzero=False):
+        assert self.count > batch_size
+
+        indexes = []
+        while True:
+            # find random index
+            while True:
+                # sample one index (ignore states wraping over
+                if (nonzero == True) and (len(self.nonzero_rewards) > 0):
+                    index = np.random.choice(
+                        self.nonzero_rewards, size=1)[0] + random.randint(0, lookahead)
+                else:
+                    index = random.randint(
+                        self.history_length + lookahead, self.count - 1)
+                # if wraps over current pointer, then get new one
+                if index >= self.current and index - (self.history_length + lookahead) < self.current:
+                    continue
+                # if wraps over episode end, then get new one
+                # NB! poststate (last screen) can be terminal state!
+                if self.terminals[(index - (self.history_length + lookahead)):index].any():
+                    continue
+                # otherwise use this index
+                break
+
+            # NB! having index first is fastest in C-order matrices
+            state = self.getState(index, lookahead)
+            self.prestates[len(indexes), ...] = state[:self.history_length]
+            indexes.append(index)
+
+        actions = self.actions[[[indexes, indexes + lookahead]]]
+        rewards = self.rewards[indexes]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, np.transpose(self.poststates, (0, 2, 3, 1))
+        else:
+            return self.prestates, actions, rewards
+
+    def can_sample(self, batch_size):
+        return batch_size + 1 <= self.count
 
     def save(self):
         for idx, (name, array) in enumerate(

@@ -233,7 +233,7 @@ class ReplayMemory(object):
             # this optimization has potential to saves about 30% compute time \o/
             return self.action[start_idx-1:end_idx-1].reshape(-1, 1), self.reward[start_idx-1:end_idx-1].reshape(-1, 1)
 
-    def add(self, frame, action, reward, done):
+    def add(self, frame, reward, action, done):
         # make sure we are not using low-dimensional observations, such as RAM
         if len(frame.shape) > 1:
             # transpose image frame into (img_c, img_h, img_w)
