@@ -187,7 +187,6 @@ def train(sess, config):
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
-                print(act_batch.shape)
                 rew_batch = np.concatenate((rew, reward_rew), axis=0)
                 reward_label = rew_batch + 1
 
