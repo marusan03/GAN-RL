@@ -174,18 +174,16 @@ def train(sess, config):
 
         if step > config.gan_learn_start and config.gats:
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                state_batch, act_batch, next_state_batch = memory.GAN_sample(
-                    config.gan_batch_size, config.lookahead)
+                state_batch, act_batch, next_state_batch = memory.GAN_sample()
                 gdm.summary, disc_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
 
             if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                obs, act, rew = memory.reward_sample(
-                    config.rp_batch_size, config.lookahead)
+                obs, act, rew = memory.reward_sample()
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    config.rp_batch_size, lookahead, nonzero=True)
+                    nonzero=True)
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
