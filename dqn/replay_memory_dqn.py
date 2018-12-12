@@ -182,6 +182,8 @@ class ReplayMemoryDQN:
             indexes.append(index)
 
         indexes = np.array(indexes)
+        print(np.array([np.expand_dims(
+            indexes, axis=1), np.expand_dims(indexes + self.lookahead, axis=1)]))
         actions = self.actions[[np.expand_dims(
             indexes, axis=1), np.expand_dims(indexes + self.lookahead, axis=1)]]
         rewards = self.rewards[[np.expand_dims(
