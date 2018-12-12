@@ -147,9 +147,9 @@ class ReplayMemoryDQN:
             actions = self.actions[[[indexes, indexes + self.lookahead - 1]]]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.gan_states[:self.history_length], (0, 2, 3, 1)), actions, np.transpose(self.gan_states[self.history_length:], (0, 2, 3, 1))
+            return np.transpose(self.gan_states[:, :self.history_length, ...], (0, 2, 3, 1)), actions, np.transpose(self.gan_states[:, self.history_length:, ...], (0, 2, 3, 1))
         else:
-            return self.gan_states[:self.history_length], actions, self.gan_states[self.history_length:]
+            return self.gan_states[:, :self.history_length, ...], actions, self.gan_states[:, self.history_length:, ...]
 
     def reward_sample(self, nonzero=False):
         assert self.count > self.rp_batch_size
@@ -184,9 +184,9 @@ class ReplayMemoryDQN:
         rewards = self.rewards[[[indexes, indexes + self.lookahead]]]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.prestates[:self.history_length], (0, 2, 3, 1)), actions, rewards
+            return np.transpose(self.prestates[:, :self.history_length, ...], (0, 2, 3, 1)), actions, rewards
         else:
-            return self.reward_states[:self.history_length], actions, rewards
+            return self.reward_states[:, :self.history_length, ...], actions, rewards
 
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count
