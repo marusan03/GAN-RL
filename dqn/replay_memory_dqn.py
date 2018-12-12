@@ -144,8 +144,7 @@ class ReplayMemoryDQN:
         if self.lookahead == 1:
             actions = np.expand_dims(self.actions[indexes], axis=1)
         else:
-            actions = [self.actions[i:i+self.lookahead-1]
-                       for i in range(indexes)]
+            actions = [self.actions[i:i+self.lookahead-1] for i in indexes]
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.gan_states[:, :self.history_length, ...], (0, 2, 3, 1)), actions, np.transpose(self.gan_states[:, self.history_length:, ...], (0, 2, 3, 1))
@@ -181,8 +180,8 @@ class ReplayMemoryDQN:
                 index, self.lookahead)
             indexes.append(index)
 
-        actions = [self.actions[i:i+self.lookahead] for i in range(indexes)]
-        rewards = [self.rewards[i:i+self.lookahead] for i in range(indexes)]
+        actions = [self.actions[i:i+self.lookahead] for i in indexes]
+        rewards = [self.rewards[i:i+self.lookahead] for i in indexes]
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.prestates[:, :self.history_length, ...], (0, 2, 3, 1)), actions, rewards
