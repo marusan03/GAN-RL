@@ -181,6 +181,7 @@ class ReplayMemoryDQN:
                 index, self.lookahead)
             indexes.append(index)
 
+        indexes = np.array(indexes)
         actions = self.actions[np.expand_dims(
             indexes, axis=1), np.expand_dims(indexes + self.lookahead, axis=1)]
         rewards = self.rewards[np.expand_dims(
