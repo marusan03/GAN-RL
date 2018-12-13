@@ -119,8 +119,8 @@ class Agent():
 
     def build_model(self, state):
 
-        initializer = tf.truncated_normal_initializer(0, 0.02)
-        # initializer = None
+        # initializer = tf.truncated_normal_initializer(0, 0.02)
+        initializer = None
 
         output = lib.nn.conv2d.Conv2D(
             'Conv1', self.history_length, 32, 8, state, initializer=initializer, stride=4, padding='VALID', data_format=self.data_format)
@@ -140,8 +140,8 @@ class Agent():
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        dence_initializer = tf.random_normal_initializer(stddev=0.02)
-        # dence_initializer = None
+        # dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        dence_initializer = None
 
         output = lib.nn.linear.Linear(
             'Dence1', 3136, 512, output, initializer=dence_initializer)
