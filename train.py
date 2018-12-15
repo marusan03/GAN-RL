@@ -155,32 +155,32 @@ def train(sess, config):
         # memory.add(norm_state_Q_GAN(screen), action, reward, terminal)
 
         # Train
+        if step > config.gan_learn_start and config.gats:
+            if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
+                state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                gdm.summary, disc_summary = gdm.train(
+                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
+                writer.add_summary(gdm.summary, step)
+                writer.add_summary(disc_summary, step)
+
+            if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
+                obs, act, rew = memory.reward_sample()
+                reward_obs, reward_act, reward_rew = memory.reward_sample(
+                    nonzero=True)
+                obs_batch = norm_frame(
+                    np.concatenate((obs, reward_obs), axis=0))
+                act_batch = np.concatenate((act, reward_act), axis=0)
+                rew_batch = np.concatenate((rew, reward_rew), axis=0)
+                reward_label = rew_batch + 1
+
+                trajectories = gdm.get_state(
+                    obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
+
+                rp_summary = rp.train(
+                    trajectories, act_batch, reward_label)
+                writer.add_summary(rp_summary, step)
+
         if step > config.learn_start:
-            if step > config.gan_learn_start and config.gats:
-                if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                    state_batch, act_batch, next_state_batch = memory.GAN_sample()
-                    gdm.summary, disc_summary = gdm.train(
-                        norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
-                    writer.add_summary(gdm.summary, step)
-                    writer.add_summary(disc_summary, step)
-
-                if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                    obs, act, rew = memory.reward_sample()
-                    reward_obs, reward_act, reward_rew = memory.reward_sample(
-                        nonzero=True)
-                    obs_batch = norm_frame(
-                        np.concatenate((obs, reward_obs), axis=0))
-                    act_batch = np.concatenate((act, reward_act), axis=0)
-                    rew_batch = np.concatenate((rew, reward_rew), axis=0)
-                    reward_label = rew_batch + 1
-
-                    trajectories = gdm.get_state(
-                        obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
-
-                    rp_summary = rp.train(
-                        trajectories, act_batch, reward_label)
-                    writer.add_summary(rp_summary, step)
-
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
