@@ -347,7 +347,7 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
         os.makedirs(image_dir)
     images, actions = gdm.rollout(
         np.expand_dims(state, axis=0), num_rollout)
-    action_label = [str(action) for action in actions[0][:, 0]]
+    action_label = [str(action) for action in actions[0]]
     action_label = '.'.join(action_label)
     images = np.hstack([image for image in images[0]])
     pil_image = Image.fromarray(unnorm_frame(images))
