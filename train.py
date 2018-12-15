@@ -343,6 +343,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
 
 
 def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
+    if not os.path.isdir(image_dir):
+        os.makedirs(image_dir)
     images, actions = gdm.rollout_image(
         np.expand_dims(state, axis=0), num_rollout)
     action_label = [str(action) for action in actions]
