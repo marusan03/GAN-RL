@@ -178,8 +178,7 @@ def train(sess, config):
 
         if step % config.rollout_frequency == 0:
             # rolloutを行い画像を保存
-            rollout_image(config, image_dir, gdm, np.expand_dims(
-                history.get(), axis=0), step, 8)
+            rollout_image(config, image_dir, gdm, history.get(), step, 8)
 
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
