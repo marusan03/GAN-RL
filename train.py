@@ -176,6 +176,10 @@ def train(sess, config):
                     trajectories, act_batch, reward_label)
                 writer.add_summary(rp_summary, step)
 
+        if step % config.rollout_frequency == 0:
+            # rolloutを行い画像を保存
+            rollout_image(config, image_dir, gdm, norm_frame(screen), step, 8)
+
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
             if step % config.train_frequency == 0:
@@ -289,10 +293,6 @@ def train(sess, config):
                 ep_rewards = []
                 actions = []
 
-                # rolloutを行い画像を保存
-                rollout_image(config, image_dir, gdm,
-                              norm_frame(screen), step, 8)
-
 
 def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, step):
     summary_str_lists = sess.run([summary_ops[tag] for tag in tag_dict.keys()], {
@@ -345,7 +345,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
 def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
     if not os.path.isdir(image_dir):
         os.makedirs(image_dir)
-    images, actions = gdm.rollout_image(
+    images, actions = gdm.rollout(
         np.expand_dims(state, axis=0), num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
