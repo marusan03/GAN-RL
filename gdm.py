@@ -73,7 +73,7 @@ class GDM():
     def rollout(self, state, num_rollout):
         actions = []
         for _ in range(num_rollout):
-            action = np.array([random.randint(0, self.num_actions)])
+            action = [[random.randint(0, self.num_actions)]]
             predicted_state = self.get_state(state, action)
             state = np.concatenate([state, predicted_state], axis=1)
             actions.append(action)
