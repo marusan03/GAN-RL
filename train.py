@@ -347,13 +347,13 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
         os.makedirs(image_dir)
     images, actions = gdm.rollout(
         np.expand_dims(state, axis=0), num_rollout)
-    action_label = [str(action) for action in actions]
+    action_label = [str(action) for action in actions[0][:, 0]]
     action_label = '.'.join(action_label)
     images = np.hstack([image for image in images[0]])
-    print(images.shape)
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(
         image_dir + 'rollout_{}_{}.jpg'.format(action_label, step))
+    print(' [*] created Image!')
 
 
 def save_model(sess, saver, checkpoint_dir, step=None):
