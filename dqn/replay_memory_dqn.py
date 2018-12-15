@@ -19,7 +19,7 @@ class GANReplayMemory(object):
         self.current = 0
 
         self.states = np.empty(
-            [self.memory_size, self.history_length] + self.dims, dtype=np.float32)
+            (self.memory_size, self.history_length) + self.dims, dtype=np.float32)
         self.actions = np.empty([self.memory_size], dtype=np.uint8)
         self.rewards = np.empty([self.memory_size], dtype=np.integer)
         self.terminals = np.full([self.batch_size], False)
