@@ -6,8 +6,8 @@ import tensorflow as tf
 import numpy as np
 
 from dqn.environment import GymEnvironment
-from dqn.replay_memory import ReplayMemory
-from dqn.replay_memory_dqn import ReplayMemoryDQN
+# from dqn.replay_memory import ReplayMemory
+from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
@@ -40,6 +40,7 @@ def train(sess, config):
     model_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints/')
+    image_dir = os.path.join(model_dir, 'lookahead/')
     print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
 
     with tf.variable_scope('step'):
@@ -76,6 +77,7 @@ def train(sess, config):
         lookahead = config.lookahead
         rp_train_frequency = 4
         gdm_train_frequency = 4
+        gan_memory = GANReplayMemory(config)
         gdm = GDM(sess, config, num_actions=config.num_actions)
         rp = RP(sess, config, num_actions=config.num_actions)
         leaves_size = config.num_actions**config.lookahead
@@ -95,7 +97,7 @@ def train(sess, config):
 
     agent = Agent(sess, config, num_actions=config.num_actions)
     # memory = ReplayMemory(config)
-    memory = ReplayMemoryDQN(config, model_dir)
+    memory = ReplayMemory(config, model_dir)
     history = History(config)
 
     tf.global_variables_initializer().run()
@@ -140,7 +142,7 @@ def train(sess, config):
             current_state = np.expand_dims(history.get(), axis=0)
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action = MCTS_planning(
-                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, step)
+                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
             else:
                 action = agent.get_action(
                     norm_frame_Q(current_state))
@@ -154,11 +156,56 @@ def train(sess, config):
 
         # Train
         if step > config.learn_start:
+            if step > config.gan_learn_start and config.gats:
+                if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
+                    state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                    gdm.summary, disc_summary = gdm.train(
+                        norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
+                    writer.add_summary(gdm.summary, step)
+                    writer.add_summary(disc_summary, step)
+
+                if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
+                    obs, act, rew = memory.reward_sample()
+                    reward_obs, reward_act, reward_rew = memory.reward_sample(
+                        nonzero=True)
+                    obs_batch = norm_frame(
+                        np.concatenate((obs, reward_obs), axis=0))
+                    act_batch = np.concatenate((act, reward_act), axis=0)
+                    rew_batch = np.concatenate((rew, reward_rew), axis=0)
+                    reward_label = rew_batch + 1
+
+                    trajectories = gdm.get_state(
+                        obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
+
+                    rp_summary = rp.train(
+                        trajectories, act_batch, reward_label)
+                    writer.add_summary(rp_summary, step)
+
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
+
+                if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
+                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
+                    trajectories = gdm.get_state(
+                        gan_obs_batch, np.expand_dims(act_batch, axis=1))
+                    gan_next_obs_batch = trajectories[:,
+                                                      config.lookahead:, ...]
+                    gan_obs_batch, gan_next_obs_batch = unnorm_frame(
+                        gan_obs_batch), unnorm_frame(gan_next_obs_batch)
+
+                    s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
+                    act_batch = np.concatenate(
+                        [act_batch, gan_act_batch], axis=0)
+                    rew_batch = np.concatenate(
+                        [rew_batch, gan_rew_batch], axis=0)
+                    s_t_plus_1 = np.concatenate(
+                        [s_t_plus_1, gan_next_obs_batch], axis=0)
+                    terminal_batch = np.concatenate(
+                        [terminal_batch, gan_terminal_batch], axis=0)
+
                 s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
@@ -171,31 +218,6 @@ def train(sess, config):
 
             if step % config.target_q_update_step == config.target_q_update_step - 1:
                 agent.updated_target_q_network()
-
-        if step > config.gan_learn_start and config.gats:
-            if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                state_batch, act_batch, next_state_batch = memory.GAN_sample()
-                gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
-
-            if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                obs, act, rew = memory.reward_sample()
-                reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=True)
-                obs_batch = norm_frame(
-                    np.concatenate((obs, reward_obs), axis=0))
-                act_batch = np.concatenate((act, reward_act), axis=0)
-                rew_batch = np.concatenate((rew, reward_rew), axis=0)
-                reward_label = rew_batch + 1
-
-                trajectories = gdm.get_state(
-                    obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
-
-                rp_summary = rp.train(
-                    trajectories, act_batch, reward_label)
-                writer.add_summary(rp_summary, step)
 
         # reinit
         if terminal:
@@ -280,7 +302,7 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
         writer.add_summary(summary_str, step)
 
 
-def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, step):
+def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
 
     sample1 = random.random()
     sample2 = random.random()
@@ -309,7 +331,14 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     GATS_action = leaves_Q_max + predicted_cum_return
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
-    # GANのメモリに代入するコードはまた今度
+    # DQNがGANの不完全さを吸収するために必要?
+    if sample1 < epsiron:
+        max_idx = random.randrange(leaves_size)
+    obs = trajectories[max_idx, -(config.history_length):, ...]
+    act_batch = np.squeeze(leaves_act_max[max_idx])
+    rew_batch = np.max(
+        predicted_cum_rew[max_idx, -config.num_rewards:], axis=1)[1] - 1
+    gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action
 
 

@@ -8,7 +8,55 @@ import numpy as np
 from .utils import save_npy, load_npy
 
 
-class ReplayMemoryDQN:
+class GANReplayMemory(object):
+    def __init__(self, config):
+        self.cnn_format = config.cnn_format
+        self.memory_size = config.gan_memory_size
+        self.history_length = config.history_length
+        self.dims = (config.screen_height, config.screen_width)
+        self.batch_size = config.batch_size
+        self.count = 0
+        self.current = 0
+
+        self.states = np.empty(
+            [self.memory_size, self.history_length] + self.dims, dtype=np.float32)
+        self.actions = np.empty([self.memory_size], dtype=np.uint8)
+        self.rewards = np.empty([self.memory_size], dtype=np.integer)
+        self.terminals = np.full([self.batch_size], False)
+        # pre-allocate prestates for minibatch
+        self.prestates = np.empty(
+            (self.batch_size, self.history_length) + self.dims, dtype=np.float32)
+
+    def add_batch(self, frames, act, rew):
+        self.states[self.current] = frames
+        self.actions[self.current] = act
+        self.rewards[self.current] = rew
+
+        self.count = max(self.count, self.current + 1)
+        self.current = (self.current + 1) % self.memory_size
+
+    def can_sample(self, batch_size):
+        """Returns true if `batch_size` different transitions can be sampled from the buffer."""
+        return batch_size + 1 <= self.count
+
+    def sample(self):
+            # memory must include poststate, prestate and history
+        assert self.count > self.history_length
+        # sample random indexes
+        indexes = [random.randint(self.history_length, self.count - 1)
+                   for _ in range(self.batch_size)]
+
+        self.prestates = self.states[indexes]
+        actions = self.actions[indexes]
+        rewards = self.rewards[indexes]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, rewards, self.terminals
+        else:
+            return self.prestates, actions, rewards, self.terminals
+
+
+class ReplayMemory:
     def __init__(self, config, model_dir):
         self.model_dir = model_dir
 
