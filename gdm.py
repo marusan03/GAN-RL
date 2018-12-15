@@ -74,7 +74,8 @@ class GDM():
         actions = []
         for _ in range(num_rollout):
             action = [[random.randint(0, self.num_actions)]]
-            predicted_state = self.get_state(state, action)
+            predicted_state = self.sess.run(self.predicted_state, feed_dict={
+                self.pre_state: state, self.action: action, self.is_training: False})
             state = np.concatenate([state, predicted_state], axis=1)
             actions.append(action)
         return state, actions
