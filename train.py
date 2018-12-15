@@ -1,6 +1,7 @@
 import os
 import random
 from tqdm import tqdm
+from PIL import Image
 
 import tensorflow as tf
 import numpy as np
@@ -25,10 +26,6 @@ def norm_frame_Q(obs):
     return x
 
 
-def norm_state_Q_GAN(state):
-    return np.clip(state, -1*127.5/130., 127.5/130.)
-
-
 def unnorm_frame(obs):
     return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.int32)
 
@@ -40,7 +37,7 @@ def train(sess, config):
     model_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints/')
-    image_dir = os.path.join(model_dir, 'lookahead/')
+    image_dir = os.path.join(model_dir, 'rollout/')
     print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
 
     with tf.variable_scope('step'):
@@ -152,7 +149,6 @@ def train(sess, config):
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
         memory.add(screen, reward, action, terminal)
-        # memory.add(norm_state_Q_GAN(screen), action, reward, terminal)
 
         # Train
         if step > config.gan_learn_start and config.gats:
@@ -293,6 +289,10 @@ def train(sess, config):
                 ep_rewards = []
                 actions = []
 
+                # rolloutを行い画像を保存
+                rollout_image(config, image_dir, gdm,
+                              norm_frame(screen), step, 8)
+
 
 def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, step):
     summary_str_lists = sess.run([summary_ops[tag] for tag in tag_dict.keys()], {
@@ -340,6 +340,15 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=1)[1] - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action
+
+
+def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
+    images, actions = gdm.rollout_image(
+        np.expand_dims(state, axis=0), num_rollout)
+    action_label = [str(action) for action in actions]
+    action_label = '.'.join(action_label)
+    pil_image = Image.fromarray(images)
+    pil_image.save(image_dir + 'rollout_{}_{}.jpg'.format(action_label, step))
 
 
 def save_model(sess, saver, checkpoint_dir, step=None):

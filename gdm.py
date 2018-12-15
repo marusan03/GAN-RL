@@ -1,3 +1,5 @@
+import random
+
 import tensorflow as tf
 import tensorflow.layers
 import numpy as np
@@ -67,6 +69,16 @@ class GDM():
         predicted_state = self.sess.run(self.fake_state, feed_dict={
             self.pre_state: state, self.action: action, self.is_training: False})
         return predicted_state
+
+    def rollout(self, state, num_rollout):
+        actions = []
+        for _ in range(num_rollout):
+            action = np.array([random.randint(0, self.num_actions)])
+            predicted_state = self.sess.run(self.fake_state, feed_dict={
+                self.pre_state: state[:, -self.history_length:, ...], self.action: action, self.is_training: False})
+            state = np.concatenate([state, predicted_state], axis=1)
+            actions.append(action)
+        return state, actions
 
     def train(self, pre_state, action, post_state, iteration=1):
         # train discriminator

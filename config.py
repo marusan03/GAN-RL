@@ -60,6 +60,7 @@ class GDMConfig(object):
     gdm_ngf = 24
     disc_ngf = 24
     gats = True
+    rollout_frequency = 50000
 
 
 class RPConfig(object):
