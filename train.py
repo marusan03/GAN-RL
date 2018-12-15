@@ -353,7 +353,7 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(
         image_dir + 'rollout_{}_{}.jpg'.format(action_label, step))
-    print(' [*] created Image!')
+    print('\n [*] created Image!')
 
 
 def save_model(sess, saver, checkpoint_dir, step=None):
