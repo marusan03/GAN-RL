@@ -338,7 +338,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     obs = trajectories[max_idx, -(config.history_length):, ...]
     act_batch = np.squeeze(leaves_act_max[max_idx])
     rew_batch = np.max(
-        predicted_cum_rew[max_idx, -config.num_rewards:], axis=1)[1] - 1
+        predicted_cum_rew[max_idx, -config.num_rewards:]) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action
 
