@@ -353,7 +353,7 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
     images = np.hstack([image for image in images[0]])
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(
-        image_dir + 'rollout_{}_{}.jpg'.format(action_label, step))
+        image_dir + 'rollout_{}_{}.jpg'.format(step, action_label))
     print('\n [*] created Image!')
 
 

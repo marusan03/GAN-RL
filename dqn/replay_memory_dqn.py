@@ -122,7 +122,7 @@ class ReplayMemory:
         # if is not in the beginning of matrix
         if index >= self.history_length - 1:
             # use faster slicing
-            return self.screens[(index - ((self.history_length + lookahead) - 1)):(index + 1), ...]
+            return self.screens[(index - (self.history_length - 1)):(index + 1 + lookahead), ...]
         else:
             # otherwise normalize indexes and use slower list based access
             indexes = [(index - i) %
@@ -186,7 +186,7 @@ class ReplayMemory:
 
             # NB! having index first is fastest in C-order matrices
             self.gan_states[len(indexes), ...] = self.getState(
-                index, self.lookahead)
+                index - 1, self.lookahead)
             indexes.append(index)
 
         if self.lookahead == 1:
@@ -224,17 +224,16 @@ class ReplayMemory:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(
-                index, self.lookahead)
+            self.reward_states[len(indexes), ...] = self.getState(index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
         rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.prestates[:, :self.history_length, ...], (0, 2, 3, 1)), actions, rewards
+            return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
         else:
-            return self.reward_states[:, :self.history_length, ...], actions, rewards
+            return self.reward_states, actions, rewards
 
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count
