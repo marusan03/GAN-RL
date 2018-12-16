@@ -327,8 +327,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     # ここが微妙
     for i in range(config.lookahead):
         predicted_cum_return = config.discount * predicted_cum_return + \
-            (np.max(predicted_cum_rew[:, ((config.lookahead-i-1)*config.num_rewards):(
-                (config.lookahead-i)*config.num_rewards)], axis=1)[1]-1.)
+            (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
+                (i+1)*config.num_rewards)], axis=1)-1.)
     GATS_action = leaves_Q_max + predicted_cum_return
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
@@ -337,8 +337,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         max_idx = random.randrange(leaves_size)
     obs = trajectories[max_idx, -(config.history_length):, ...]
     act_batch = np.squeeze(leaves_act_max[max_idx])
-    rew_batch = np.max(
-        predicted_cum_rew[max_idx, -config.num_rewards:]) - 1
+    rew_batch = np.argmax(
+        predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action
 
