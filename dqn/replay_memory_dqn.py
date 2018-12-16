@@ -87,7 +87,7 @@ class ReplayMemory:
         self.gan_states = np.empty(
             (self.gan_batch_size, self.history_length + self.lookahead) + self.dims, dtype=np.uint8)
         self.reward_states = np.empty(
-            (self.rp_batch_size, self.history_length + self.lookahead) + self.dims, dtype=np.uint8)
+            (self.rp_batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add(self, screen, reward, action, terminal):
         assert screen.shape == self.dims
