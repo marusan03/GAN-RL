@@ -43,8 +43,8 @@ class GANReplayMemory(object):
             # memory must include poststate, prestate and history
         assert self.count > self.history_length
         # sample random indexes
-        indexes = [random.randint(self.history_length, self.count - 1)
-                   for _ in range(self.batch_size)]
+        indexes = np.random.randint(
+            self.history_length, self.count - 1, (self.batch_size))
 
         self.prestates = self.states[indexes]
         actions = self.actions[indexes]

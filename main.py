@@ -36,6 +36,7 @@ flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
 flags.DEFINE_integer('random_seed', 123, 'Value of random seed')
 
 # Set random seed
+np.random.seed(FLAGS.random_seed)
 tf.set_random_seed(FLAGS.random_seed)
 random.seed(FLAGS.random_seed)
 

@@ -61,6 +61,7 @@ class GDMConfig(object):
     disc_ngf = 24
     gats = True
     rollout_frequency = 50000
+    gan_warmup = 5000
 
 
 class RPConfig(object):
