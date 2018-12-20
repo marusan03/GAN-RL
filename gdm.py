@@ -297,7 +297,7 @@ class GDM():
                 fake_state = tf.cond(
                     self.warmup[i],
                     tf.concat(
-                        [fake_state, real_state[:, (self.history_length + i + 1), ...]], axis=1),
+                        [fake_state, post_state[:, i:i+1, ...]], axis=1),
                     tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
                         fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
                 )
