@@ -32,6 +32,10 @@ def unnorm_frame(obs):
 
 def train(sess, config):
 
+    gen_step = 0
+    sample = 0
+    gan_epsiron = 0
+
     env = GymEnvironment(config)
 
     model_dir = './log/{}_lookahead_{}_gats_{}/'.format(
@@ -154,10 +158,22 @@ def train(sess, config):
         if step > config.gan_learn_start and config.gats:
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                warmup_bool = []
+                for _ in range(config.lookahead):
+                    if gen_step > config.gan_warmup:
+                        sample = random.random()
+                        gan_epsiron = exploration_gan.value(
+                            gen_step-config.gan_warmup)
+                    else:
+                        sample = 1
+                        gan_epsiron = 0
+                    warmup_bool.append(sample > gan_epsiron)
+
                 gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
+                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
+                gen_step += 1
 
             if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 obs, act, rew = memory.reward_sample()

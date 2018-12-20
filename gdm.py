@@ -29,6 +29,8 @@ class GDM():
         self.disc_ngf = self.config.disc_ngf
         self.lambda_l1 = self.config.lambda_l1
         self.lambda_l2 = self.config.lambda_l2
+        self.gan_warmup = self.config.gan_warmup
+        self.gen_step = 0
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
@@ -53,20 +55,13 @@ class GDM():
         with tf.variable_scope('gdm'):
             self.predicted_state = norm_state_Q_GAN(self.build_gdm(
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
-            self.fake_state = tf.concat(
-                [self.pre_state, self.predicted_state], axis=1, name='fake_state')
-
-        with tf.variable_scope('gdm', reuse=True):
-            for i in range(1, self.lookahead):
-                self.fake_state = tf.concat([self.fake_state, norm_state_Q_GAN(self.build_gdm(
-                    self.fake_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
 
         with tf.name_scope('opt'):
             self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op(
-                self.pre_state, self.post_state, self.fake_state, self.action, self.is_training)
+                self.pre_state, self.post_state, self.predicted_state, self.action, self.is_training)
 
     def get_state(self, state, action):
-        predicted_state = self.sess.run(self.fake_state, feed_dict={
+        predicted_state = self.sess.run(self.predicted_state, feed_dict={
             self.pre_state: state, self.action: action, self.is_training: False})
         return predicted_state
 
@@ -80,15 +75,15 @@ class GDM():
             actions.append(action[0][0])
         return state, actions
 
-    def train(self, pre_state, action, post_state, iteration=1):
+    def train(self, pre_state, action, post_state, warmup, iteration=1):
         # train discriminator
         for _ in range(iteration):
             _, disc_summary = self.sess.run([self.disc_train_op, self.disc_summary], feed_dict={
-                self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.is_training: True})
+                self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
 
         # train gdm
         _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
-            self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.is_training: True})
+            self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
         return gdm_summary, disc_summary
 
     def build_gdm(self, state, action, is_training, lookahead=1, ngf=32):
@@ -289,10 +284,23 @@ class GDM():
 
         return output
 
-    def build_training_op(self, pre_state, post_state, fake_state, action, is_training):
+    def build_training_op(self, pre_state, post_state, predicted_state, action, is_training):
+
+        self.warmup = tf.placeholder(tf.bool, shape=[self.lookahead], name='gan_warmup')
 
         real_state = tf.concat(
             [pre_state, post_state], axis=self.concat_dim, name='real_state')
+
+        fake_state = pre_state
+        with tf.variable_scope('gdm', reuse=True):
+            for i in range(0, self.lookahead):
+                fake_state = tf.cond(
+                    self.warmup[i],
+                    tf.concat(
+                        [fake_state, real_state[:, (self.history_length + i + 1), ...]], axis=1),
+                    tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
+                        fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
+                )
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
