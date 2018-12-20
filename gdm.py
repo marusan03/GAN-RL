@@ -36,6 +36,9 @@ class GDM():
             tf.int32, shape=[None, self.lookahead], name='actions')
         self.is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
+        self.warmup = tf.placeholder(
+            tf.bool, shape=[self.lookahead], name='gan_warmup')
+
         self.concat_dim = 1
         self.pre_state = tf.placeholder(
             tf.float32, shape=[None, self.history_length, self.state_width, self.state_height], name='pre_state')
@@ -285,8 +288,6 @@ class GDM():
         return output
 
     def build_training_op(self, pre_state, post_state, predicted_state, action, is_training):
-
-        self.warmup = tf.placeholder(tf.bool, shape=[self.lookahead], name='gan_warmup')
 
         real_state = tf.concat(
             [pre_state, post_state], axis=self.concat_dim, name='real_state')
