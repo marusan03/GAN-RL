@@ -367,7 +367,8 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
     if config.gif == True:
-        pil_image = Image.fromarray(unnorm_frame(images[0]))
+        pil_image = [Image.fromarray(unnorm_frame(image))
+                     for image in images[0]]
         pil_image.save(
             image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=images, optimize=False, duration=100, loop=0)
     images = np.hstack([image for image in images[0]])
