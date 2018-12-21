@@ -366,12 +366,12 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
         np.expand_dims(state, axis=0), num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
-    if config.gif == True:
-        pil_image = [Image.fromarray(unnorm_frame(image))
-                     for image in images[0]]
-        pil_image[0].save(
-            image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
-    images = np.hstack([image for image in images[0]])
+    # if config.gif == True:
+    #     pil_image = [Image.fromarray(unnorm_frame(image))
+    #                  for image in images[0]]
+    #     pil_image[0].save(
+    #         image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
+    images = np.hstack(images[0])
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(
         image_dir + 'rollout_{}_{}.jpg'.format(step, action_label))
