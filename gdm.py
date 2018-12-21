@@ -29,8 +29,6 @@ class GDM():
         self.disc_ngf = self.config.disc_ngf
         self.lambda_l1 = self.config.lambda_l1
         self.lambda_l2 = self.config.lambda_l2
-        self.gan_warmup = self.config.gan_warmup
-        self.gen_step = 0
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
@@ -64,9 +62,9 @@ class GDM():
                 self.pre_state, self.post_state, self.predicted_state, self.action, self.is_training)
 
     def get_state(self, state, action):
-        for _ in range(self.lookahead):
+        for i in range(self.lookahead):
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
-                self.pre_state: state[:, -1*self.history_length, ...], self.action: action, self.is_training: False})
+                self.pre_state: state[:, -1*self.history_length:, ...], self.action: np.expand_dims(action[:, i], axis=1), self.is_training: False})
             state = np.concatenate([state, predicted_state], axis=1)
         return state
 

@@ -186,7 +186,7 @@ def train(sess, config):
                 reward_label = rew_batch + 1
 
                 trajectories = gdm.get_state(
-                    obs_batch[:, -1*config.history_length:, :, :], act_batch[:, :-1])
+                    obs_batch, act_batch[:, :-1])
 
                 rp_summary = rp.train(
                     trajectories, act_batch, reward_label)
