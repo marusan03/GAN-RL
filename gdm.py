@@ -57,16 +57,20 @@ class GDM():
             self.predicted_state = norm_state_Q_GAN(self.build_gdm(
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
 
+        self.trajectories = self.pre_state
+        with tf.variable_scope('gdm', reuse=True):
+            self.state = norm_state_Q_GAN(self.build_gdm(
+                self.trajectories[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
+            self.trajectories = tf.concat([self.trajectories, self.state], axis=1)
+
         with tf.name_scope('opt'):
             self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op(
                 self.pre_state, self.post_state, self.predicted_state, self.action, self.is_training)
 
     def get_state(self, state, action):
-        for i in range(self.lookahead):
-            predicted_state = self.sess.run(self.predicted_state, feed_dict={
-                self.pre_state: state[:, -1*self.history_length:, ...], self.action: np.expand_dims(action[:, i], axis=1), self.is_training: False})
-            state = np.concatenate([state, predicted_state], axis=1)
-        return state
+        predicted_state = self.sess.run(self.trajectories, feed_dict={
+            self.pre_state: state, self.action: action, self.is_training: False})
+        return predicted_state
 
     def rollout(self, state, num_rollout):
         actions = []
