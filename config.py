@@ -62,6 +62,7 @@ class GDMConfig(object):
     gats = True
     rollout_frequency = 50000
     gan_warmup = 5000
+    gif = True
 
 
 class RPConfig(object):
