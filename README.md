@@ -3,19 +3,19 @@
 
 # PROGRESS
 - GDMのforward作成  
-    [x] forwardの作成  
-    [x] loss関数の作成  
-    [x] test  
+    - [x] forwardの作成  
+    - [x] loss関数の作成  
+    - [x] test  
 
 - Discriminator作成
-    [x] modelの作成  
-    [x] loss関数の作成  
-    [x] test  
+    - [x] modelの作成  
+    - [x] loss関数の作成  
+    - [x] test  
 
 - Reward Predictor作成  
-    [x] modelの作成  
-    [x] loss関数の作成  
-    [ ] test  
+    - [x] modelの作成  
+    - [x] loss関数の作成  
+    - [ ] test  
         - うまく動いていない？  
         - lossが振動する  
 
