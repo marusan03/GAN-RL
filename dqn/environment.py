@@ -42,7 +42,8 @@ class Environment(object):
 
     @ property
     def screen(self):
-        return imresize(rgb2gray(self._screen), self.dims)
+        # return imresize(rgb2gray(self._screen), self.dims)
+        return imresize(rgb2gray(self._screen).mean(2), self.dims).reshape((1) + self.dims)
 
     @property
     def action_size(self):
