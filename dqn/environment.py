@@ -1,6 +1,7 @@
 import gym
 import random
 import numpy as np
+from PIL import Image
 from .utils import rgb2gray, imresize
 
 
@@ -42,8 +43,16 @@ class Environment(object):
 
     @ property
     def screen(self):
-        return imresize(rgb2gray(self._screen), self.dims)
-        # return imresize(rgb2gray(self._screen).mean(2), self.dims)
+        # return imresize(rgb2gray(self._screen), self.dims)
+        img = np.reshape(self._screen, [210, 160, 3]).astype(np.float32)
+        img = img[:, :, 0] * 0.299 + img[:, :, 1] * \
+            0.587 + img[:, :, 2] * 0.114
+        img = Image.fromarray(img)
+        resized_screen = img.resize((84, 110), Image.BILINEAR)
+        resized_screen = np.array(resized_screen)
+        x_t = resized_screen[18:102, :]
+        x_t = np.reshape(x_t, [84, 84, 1])
+        return x_t.astype(np.uint8)
 
     @property
     def action_size(self):
