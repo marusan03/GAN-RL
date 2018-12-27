@@ -294,15 +294,15 @@ class GDM():
     def build_training_op(self, pre_state, post_state, predicted_state, action, is_training):
 
         real_state = tf.concat(
-            [pre_state, post_state], axis=self.concat_dim, name='real_state')
+            [self.pre_state, self.post_state], axis=self.concat_dim, name='real_state')
 
-        fake_state = pre_state
+        fake_state = self.pre_state
         with tf.variable_scope('gdm', reuse=True):
             for i in range(0, self.lookahead):
                 fake_state = tf.cond(
                     self.warmup[i],
                     lambda: tf.concat(
-                        [fake_state, post_state[:, i:i+1, ...]], axis=1),
+                        [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
                     lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
                         fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
                 )
@@ -310,15 +310,20 @@ class GDM():
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
                 disc_fake = self.build_discriminator(
-                    fake_state, action, is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
+                    fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
+        
+        with tf.name_scope('gdm_fake'):
+            with tfmvariable_scope('discriminator', reuse=True):
+                gdm_fake = self.build_discriminator(
+                    self.trajectories, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('disc_real'):
             with tf.variable_scope('discriminator', reuse=True):
                 disc_real = self.build_discriminator(
-                    real_state, action, is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
+                    real_state, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('loss'):
-            gdm_loss = -tf.reduce_mean(disc_fake)
+            gdm_loss = -tf.reduce_mean(gdm_fake)
             disc_loss = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
 
             # Gradient penalty
