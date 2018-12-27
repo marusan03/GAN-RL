@@ -313,7 +313,7 @@ class GDM():
                     fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
         
         with tf.name_scope('gdm_fake'):
-            with tfmvariable_scope('discriminator', reuse=True):
+            with tf.variable_scope('discriminator', reuse=True):
                 gdm_fake = self.build_discriminator(
                     self.trajectories, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
