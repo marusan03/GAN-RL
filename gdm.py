@@ -295,28 +295,23 @@ class GDM():
         real_state = tf.concat(
             [self.pre_state, self.post_state], axis=self.concat_dim, name='real_state')
 
-        fake_state = self.trajectories
+        # fake_state = self.trajectories
 
-        # fake_state = self.pre_state
-        # with tf.variable_scope('gdm', reuse=True):
-        #     for i in range(0, self.lookahead):
-        #         fake_state = tf.cond(
-        #             self.warmup[i],
-        #             lambda: tf.concat(
-        #                 [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
-        #             lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
-        #                 fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
-        #         )
+        fake_state = self.pre_state
+        with tf.variable_scope('gdm', reuse=True):
+            for i in range(0, self.lookahead):
+                fake_state = tf.cond(
+                    self.warmup[i],
+                    lambda: tf.concat(
+                        [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
+                    lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
+                        fake_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
+                )
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
                 disc_fake = self.build_discriminator(
                     fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
-
-        # with tf.name_scope('gdm_fake'):
-        #     with tf.variable_scope('discriminator', reuse=True):
-        #         gdm_fake = self.build_discriminator(
-        #             self.trajectories, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('disc_real'):
             with tf.variable_scope('discriminator', reuse=True):
