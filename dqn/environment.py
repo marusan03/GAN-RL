@@ -52,7 +52,7 @@ class Environment(object):
         resized_screen = np.array(resized_screen)
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84])
-        return x_t.astype(np.uint8)
+        return x_t
 
     @property
     def action_size(self):
