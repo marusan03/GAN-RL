@@ -169,10 +169,11 @@ def train(sess, config):
                         gan_epsiron = 0
                     warmup_bool.append(sample > gan_epsiron)
 
-                gdm.summary, disc_summary = gdm.train(
+                gdm.summary, disc_summary, merged_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
+                writer.add_summary(merged_summary, step)
                 gen_step += 1
 
             if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):

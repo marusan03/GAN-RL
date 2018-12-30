@@ -64,8 +64,7 @@ class GDM():
             self.trajectories = tf.concat([self.trajectories, self.state], axis=1)
 
         with tf.name_scope('opt'):
-            self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op(
-                self.pre_state, self.post_state, self.predicted_state, self.action, self.is_training)
+            self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary, self.merged_summary = self.build_training_op()
 
     def get_state(self, state, action):
         predicted_state = self.sess.run(self.trajectories, feed_dict={
@@ -85,13 +84,13 @@ class GDM():
     def train(self, pre_state, action, post_state, warmup, iteration=1):
         # train discriminator
         for _ in range(iteration):
-            _, disc_summary = self.sess.run([self.disc_train_op, self.disc_summary], feed_dict={
+            _, disc_summary, merged_summary = self.sess.run([self.disc_train_op, self.disc_summary, self.merged_summary], feed_dict={
                 self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
 
         # train gdm
         _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
             self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
-        return gdm_summary, disc_summary
+        return gdm_summary, disc_summary, merged_summary
 
     def build_gdm(self, state, action, is_training, lookahead=1, ngf=32):
 
@@ -291,31 +290,33 @@ class GDM():
 
         return output
 
-    def build_training_op(self, pre_state, post_state, predicted_state, action, is_training):
+    def build_training_op(self):
 
         real_state = tf.concat(
             [self.pre_state, self.post_state], axis=self.concat_dim, name='real_state')
 
-        fake_state = self.pre_state
-        with tf.variable_scope('gdm', reuse=True):
-            for i in range(0, self.lookahead):
-                fake_state = tf.cond(
-                    self.warmup[i],
-                    lambda: tf.concat(
-                        [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
-                    lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
-                        fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
-                )
+        fake_state = self.trajectories
+
+        # fake_state = self.pre_state
+        # with tf.variable_scope('gdm', reuse=True):
+        #     for i in range(0, self.lookahead):
+        #         fake_state = tf.cond(
+        #             self.warmup[i],
+        #             lambda: tf.concat(
+        #                 [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
+        #             lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
+        #                 fake_state[:, -1*self.history_length:, ...], tf.expand_dims(action[:, i], axis=1), is_training, ngf=self.gdm_ngf))], axis=1)
+        #         )
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
                 disc_fake = self.build_discriminator(
                     fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
-        
-        with tf.name_scope('gdm_fake'):
-            with tf.variable_scope('discriminator', reuse=True):
-                gdm_fake = self.build_discriminator(
-                    self.trajectories, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
+
+        # with tf.name_scope('gdm_fake'):
+        #     with tf.variable_scope('discriminator', reuse=True):
+        #         gdm_fake = self.build_discriminator(
+        #             self.trajectories, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('disc_real'):
             with tf.variable_scope('discriminator', reuse=True):
@@ -323,8 +324,10 @@ class GDM():
                     real_state, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('loss'):
-            gdm_loss = -tf.reduce_mean(gdm_fake)
+            gdm_loss = -tf.reduce_mean(disc_fake)
             disc_loss = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
+
+            gen_summary = tf.summary.scalar('gen_loss', -gdm_loss)
 
             # Gradient penalty
             # with tf.name_scope('gradient_penalty'):
@@ -349,10 +352,14 @@ class GDM():
             #     disc_loss += self.lamda * gradient_penalty
 
             with tf.name_scope('L1_L2_loss'):
-                difference = fake_state[:, -1*self.lookahead:, ...] - post_state
+                difference = fake_state[:, -1*self.lookahead:, ...] - self.post_state
                 l1_loss = tf.reduce_mean(tf.abs(difference))
+                l1_summary = tf.summary.scalar('l1_loss', l1_loss)
                 l2_loss = tf.reduce_mean(tf.square(difference))
+                l2_summary = tf.summary.scalar('l2_loss', l2_loss)
                 gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
+                merged_summary = tf.summary.merge(
+                    [gen_summary, l1_summary, l2_summary], name='merged_summary')
 
             with tf.name_scope('weight_decay'):
                 gdm_weight_decay = tf.losses.get_regularization_loss(
@@ -380,4 +387,4 @@ class GDM():
             disc_train_op = tf.train.MomentumOptimizer(
                 learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
 
-        return gdm_train_op, disc_train_op, gdm_summary, disc_summary
+        return gdm_train_op, disc_train_op, gdm_summary, disc_summary, merged_summary
