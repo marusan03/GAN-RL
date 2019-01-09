@@ -23,12 +23,15 @@ class RP():
         self.state_height = self.config.screen_height
         self.data_format = self.config.cnn_format
 
+        self.initializer = tf.random_normal_initializer(0.0, 0.02)
+        # self.initializer = None
+
         self.concat_dim = 1
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead+1], name='actions')
         self.reward = tf.placeholder(
-            tf.int32, shape=[None, self.lookahead+1], name='rewards')
+            tf.int32, shape=[None, self.lookahead+1, 0], name='rewards')
         self.state = tf.placeholder(
             tf.float32, shape=[None, self.history_length + self.lookahead, self.state_width, self.state_height], name='state')
 
@@ -57,17 +60,17 @@ class RP():
     def build_rp(self, state, action):
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, weight_norm_scale=0.0001, stride=4, padding='VALID', data_format=self.data_format)
+            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_norm_scale=0.0001, stride=4, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.2', 32, 64, 4, output, weight_norm_scale=0.0001, stride=2, padding='VALID', data_format=self.data_format)
+            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=2, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.3', 64, 128, 3, output, weight_norm_scale=0.0001, stride=1, padding='VALID', data_format=self.data_format)
+            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=1, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu3')
         # (None, 7, 7, 128)
 
@@ -75,7 +78,7 @@ class RP():
         # (None, 6272)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.1', 6272, 512, output, weight_norm_scale=0.0001)
+            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_norm_scale=0.0001)
         output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
@@ -89,7 +92,7 @@ class RP():
         # (None, 512+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, weight_norm_scale=0.0001)
+            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, weight_norm_scale=0.0001)
         # (None, 3*lookahead)
 
         return output
@@ -100,7 +103,7 @@ class RP():
             outputs = self.predicted_reward[
                 :, self.num_rewards*ind: self.num_rewards*(ind + 1)]
             loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=reward[:, ind], logits=outputs))
+                labels=reward[:, ind, 0], logits=outputs))
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(

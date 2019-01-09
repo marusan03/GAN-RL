@@ -97,8 +97,8 @@ def train(sess, config):
         tree_base = base_generator()
 
     agent = Agent(sess, config, num_actions=config.num_actions)
-    # memory = ReplayMemory(config)
-    memory = ReplayMemory(config, model_dir)
+    memory = ReplayMemory(config)
+    # memory = ReplayMemory(config, model_dir)
     history = History(config)
 
     tf.global_variables_initializer().run()
@@ -159,7 +159,7 @@ def train(sess, config):
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample()
                 state_batch, act_batch, next_state_batch = memory.GAN_sample(
-                    config.lookahead)
+                    config.gan_batch_size, config.lookahead)
                 warmup_bool = []
                 for _ in range(config.lookahead):
                     if gen_step > config.gan_warmup:
@@ -215,8 +215,9 @@ def train(sess, config):
 
                 if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                     # gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
-                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample(
+                    gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
                         config.batch_size)
+                    gan_terminal_batch = np.full([config.batch_size], False)
                     trajectories = gdm.get_state(
                         gan_obs_batch, np.expand_dims(act_batch, axis=1))
                     gan_next_obs_batch = trajectories[:,
