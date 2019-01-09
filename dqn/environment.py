@@ -3,6 +3,7 @@ import random
 import numpy as np
 from PIL import Image
 from .utils import rgb2gray, imresize
+from collections import deque
 
 
 class Environment(object):
@@ -15,6 +16,9 @@ class Environment(object):
 
         self.display = config.display
         self.dims = (screen_width, screen_height)
+
+        # cripping
+        self._screen_buffer = deque(maxlen=2)
 
         self._screen = None
         self.reward = 0
@@ -31,7 +35,11 @@ class Environment(object):
         self.new_game(True)
         for _ in range(random.randint(0, self.random_start - 1)):
             self._step(0)
+        # cripping
+        self._screen_buffer.clear()
         self.render()
+        self._screen_buffer.append(self.screen)
+
         return self.screen, 0, 0, self.terminal
 
     def _step(self, action):
@@ -52,6 +60,9 @@ class Environment(object):
         resized_screen = np.array(resized_screen)
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84])
+        # cripping
+        self._screen_buffer.append(x_t)
+        x_t = np.max(np.stack(self._screen_buffer), axis=0)
         return x_t
 
     @property
