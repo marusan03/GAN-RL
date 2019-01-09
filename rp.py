@@ -60,17 +60,17 @@ class RP():
     def build_rp(self, state, action):
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_norm_scale=0.0001, stride=4, padding='VALID', data_format=self.data_format)
+            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_norm_scale=0.0001, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=2, padding='VALID', data_format=self.data_format)
+            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=1, padding='VALID', data_format=self.data_format)
+            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_norm_scale=0.0001, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu3')
         # (None, 7, 7, 128)
 
@@ -78,7 +78,7 @@ class RP():
         # (None, 6272)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_norm_scale=0.0001)
+            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_norm_scale=0.0001, pytorch_biases=True)
         output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
@@ -92,7 +92,7 @@ class RP():
         # (None, 512+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, weight_norm_scale=0.0001)
+            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, weight_norm_scale=0.0001, pytorch_biases=True)
         # (None, 3*lookahead)
 
         return output

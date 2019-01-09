@@ -20,6 +20,7 @@ def Conv2D(
     spectral_norm=None,
     update_collection=None,
     biases=True,
+    pytorch_biases=False,
     padding_size=0,
     padding='SAME',
     data_format='NCHW'
@@ -96,9 +97,16 @@ def Conv2D(
             )
 
         if biases:
-            _biases = tf.get_variable(
-                'biases', initializer=np.zeros(output_dim, dtype='float32'))
-
-            result = tf.nn.bias_add(result, _biases, data_format=data_format)
+            if pytorch_biases:
+                k = 1.0 / input_dim * inputs.shape[2] * inputs.shape[3]
+                _biases = tf.get_variable(
+                    'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim))
+                result = tf.nn.bias_add(
+                    result, _biases, data_format=data_format)
+            else:
+                _biases = tf.get_variable(
+                    'biases', initializer=np.zeros(output_dim, dtype='float32'))
+                result = tf.nn.bias_add(
+                    result, _biases, data_format=data_format)
 
         return result

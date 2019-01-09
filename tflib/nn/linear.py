@@ -37,6 +37,7 @@ def Linear(
         inputs,
         initializer=None,
         biases=True,
+        pytorch_biases=False,
         initialization=None,
         weight_norm_scale=0.,
         spectral_norm=False,
@@ -145,10 +146,14 @@ def Linear(
                 tf.unstack(tf.shape(inputs))[:-1] + [output_dim]))
 
         if biases:
-            result = tf.nn.bias_add(
-                result,
-                tf.get_variable('biases', initializer=np.zeros(
-                    (output_dim,), dtype='float32'))
-            )
+            if pytorch_biases:
+                k = 1.0 / input_dim
+                _biases = tf.get_variable(
+                    'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim))
+                result = tf.nn.bias_add(result, _biases)
+            else:
+                _biases = tf.get_variable(
+                    'biases', initializer=np.zeros(output_dim, dtype='float32'))
+                result = tf.nn.bias_add(result, _biases)
 
         return result
