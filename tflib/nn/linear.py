@@ -149,7 +149,7 @@ def Linear(
             if pytorch_biases:
                 k = 1.0 / input_dim
                 _biases = tf.get_variable(
-                    'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim))
+                    'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim), shape='float32')
                 result = tf.nn.bias_add(result, _biases)
             else:
                 _biases = tf.get_variable(
