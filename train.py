@@ -7,8 +7,8 @@ import tensorflow as tf
 import numpy as np
 
 from dqn.environment import GymEnvironment
-# from dqn.replay_memory import ReplayMemory
-from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
+from dqn.replay_memory import ReplayMemory, GANReplayMemory
+# from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
@@ -157,7 +157,9 @@ def train(sess, config):
         # Train
         if step > config.gan_learn_start and config.gats:
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                # state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                state_batch, act_batch, next_state_batch = memory.GAN_sample(
+                    config.lookahead)
                 warmup_bool = []
                 for _ in range(config.lookahead):
                     if gen_step > config.gan_warmup:
@@ -177,9 +179,13 @@ def train(sess, config):
                 gen_step += 1
 
             if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                obs, act, rew = memory.reward_sample()
+                # obs, act, rew = memory.reward_sample()
+                obs, act, rew = memory.reward_sample(
+                    config.gan_batch_size, config.lookahead)
+                # reward_obs, reward_act, reward_rew = memory.reward_sample(
+                #     nonzero=True)
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=True)
+                    config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
@@ -203,10 +209,14 @@ def train(sess, config):
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
-                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
+                # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
+                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
+                    config.batch_size, config.lookahead)
 
                 if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
-                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
+                    # gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
+                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample(
+                        config.batch_size)
                     trajectories = gdm.get_state(
                         gan_obs_batch, np.expand_dims(act_batch, axis=1))
                     gan_next_obs_batch = trajectories[:,

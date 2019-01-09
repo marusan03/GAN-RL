@@ -56,7 +56,7 @@ class GDM():
                 self.post_state, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
         # wgan-gp
-        self.lamda = self.config.lamda
+        # self.lamda = self.config.lamda
 
         with tf.variable_scope('gdm'):
             self.predicted_state = norm_state_Q_GAN(self.build_gdm(

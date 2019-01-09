@@ -44,7 +44,7 @@ class GANReplayMemory(object):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
         return batch_size + 1 <= self.num_in_buffer
 
-    def sample_batch(self, batch_size):
+    def sample(self, batch_size):
         idxes = sample_n_unique(lambda: random.randint(
             0, self.num_in_buffer - 1), batch_size)
         obs_batch = np.stack([self.obs[idx] for idx in idxes], 0)
