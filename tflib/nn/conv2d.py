@@ -98,7 +98,7 @@ def Conv2D(
 
         if biases:
             if pytorch_biases:
-                k = 1.0 / input_dim * inputs.shape[2] * inputs.shape[3]
+                k = 1.0 / input_dim * shape[0] * shape[1]
                 _biases = tf.get_variable(
                     'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim))
                 result = tf.nn.bias_add(
