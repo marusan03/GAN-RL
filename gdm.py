@@ -30,7 +30,7 @@ class GDM():
         self.lambda_l1 = self.config.lambda_l1
         self.lambda_l2 = self.config.lambda_l2
 
-        self.initializer = tf.random_normal_initializer(0, 0.02)
+        self.initializer = tf.random_normal_initializer(0.0, 0.02)
         self.batch_norm_initializer = tf.random_normal_initializer(1.0, 0.02)
         # self.initializer = None
         # self.batch_norm_initializer = None
