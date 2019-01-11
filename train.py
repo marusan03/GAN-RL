@@ -171,19 +171,19 @@ def train(sess, config):
                         gan_epsiron = 0
                     warmup_bool.append(sample > gan_epsiron)
 
-                # gdm.summary, disc_summary, merged_summary = gdm.train(
-                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
-
-                # test
-                disc_summary = gdm.disc_train(
-                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
-
-                state_batch, act_batch, next_state_batch = memory.GAN_sample(
-                    config.gan_batch_size, config.lookahead)
-
-                gdm.summary, merged_summary = gdm.gdm_train(
+                gdm.summary, disc_summary, merged_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
-                # end
+
+                # # test
+                # disc_summary = gdm.disc_train(
+                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
+
+                # state_batch, act_batch, next_state_batch = memory.GAN_sample(
+                #     config.gan_batch_size, config.lookahead)
+
+                # gdm.summary, merged_summary = gdm.gdm_train(
+                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
+                # # end
 
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
