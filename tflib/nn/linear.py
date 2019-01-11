@@ -120,7 +120,7 @@ def Linear(
 
         else:
             weight_values = initializer
-            shape = (input_dim, output_dim)
+        shape = (input_dim, output_dim)
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(

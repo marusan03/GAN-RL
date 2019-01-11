@@ -52,7 +52,7 @@ def Conv2D(
             )
         else:
             filter_values = initializer
-            shape = (filter_size, filter_size, input_dim, output_dim)
+        shape = (filter_size, filter_size, input_dim, output_dim)
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
