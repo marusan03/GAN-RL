@@ -132,18 +132,14 @@ def Linear(
         if spectral_norm:
             result = tf.matmul(inputs, spectral_normalization(
                 weight, update_collection=update_collection))
-
-        # if 'Discriminator' in name:
-        #     print "WARNING weight constraint on {}".format(name)
-        #     weight = tf.nn.softsign(10.*weight)*.1
-
-        if inputs.get_shape().ndims == 2:
-            result = tf.matmul(inputs, weight)
         else:
-            reshaped_inputs = tf.reshape(inputs, [-1, input_dim])
-            result = tf.matmul(reshaped_inputs, weight)
-            result = tf.reshape(result, tf.stack(
-                tf.unstack(tf.shape(inputs))[:-1] + [output_dim]))
+            if inputs.get_shape().ndims == 2:
+                result = tf.matmul(inputs, weight)
+            else:
+                reshaped_inputs = tf.reshape(inputs, [-1, input_dim])
+                result = tf.matmul(reshaped_inputs, weight)
+                result = tf.reshape(result, tf.stack(
+                    tf.unstack(tf.shape(inputs))[:-1] + [output_dim]))
 
         if biases:
             if pytorch_biases:

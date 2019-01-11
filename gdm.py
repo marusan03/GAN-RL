@@ -96,7 +96,7 @@ class GDM():
         _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
             self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
         return gdm_summary, disc_summary, merged_summary
-    
+
     def disc_train(self, pre_state, action, post_state, iteration=1):
         for _ in range(iteration):
             _, disc_summary = self.sess.run([self.disc_train_op, self.disc_summary], feed_dict={
