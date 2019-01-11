@@ -52,7 +52,7 @@ def Conv2D(
             )
         else:
             filter_values = initializer
-        shape = (filter_size, filter_size, input_dim, output_dim)
+            shape = (filter_size, filter_size, input_dim, output_dim)
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
@@ -98,7 +98,7 @@ def Conv2D(
 
         if biases:
             if pytorch_biases:
-                k = 1.0 / input_dim * shape[0] * shape[1]
+                k = 1.0 / input_dim * filter_size * filter_size
                 _biases = tf.get_variable(
                     'biases', initializer=np.random.uniform(-np.sqrt(k), np.sqrt(k), output_dim).astype('float32'))
                 result = tf.nn.bias_add(
