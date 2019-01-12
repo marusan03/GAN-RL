@@ -235,6 +235,73 @@ class ReplayMemory:
         else:
             return self.reward_states, actions, rewards
 
+    # test code
+
+    def reward_sample2(self, batch_size, lookahead):
+        def sample_n_unique(sampling_f, n):
+            res = []
+            while len(res) < n:
+                candidate = sampling_f()
+                # print(candidate)
+                if candidate not in res:
+                    res.append(candidate)
+            return res
+        assert self.can_sample(lookahead)
+        # idxes = sample_n_unique(lambda: random.randint(lookahead, self.current - 2 - lookahead), batch_size)
+        idxes = sample_n_unique(lambda: (self.count-random.randint(lookahead+self.history_length, 60000)) %
+                                (self.current-lookahead-self.history_length), batch_size)
+        return self.reward_encode_sample(idxes, lookahead)
+
+    def nonzero_reward_sample(self, batch_size, lookahead):
+        # assert self.can_sample_nonzero_rewards(lookahead)
+        # nonzero_idxes = np.random.choice(self.nonzero_rewards, size=batch_size)
+        idxes = [self.get_rand_nonzero_idx(lookahead)
+                 for i in range(batch_size)]
+        return self.reward_encode_sample(idxes, lookahead)
+
+    def reward_encode_sample(self, idxes, lookahead=1):
+        self.reward_states = [self.getState(idx - 1) for idx in idxes]
+        seq = [self._encode_reward_action(idx + 1, lookahead) for idx in idxes]
+        act_batch = np.concatenate(
+            [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
+        rew_batch = np.concatenate([seq[i][1][np.newaxis, :]
+                                    for i in range(len(idxes))], 0)
+        return self.reward_states, act_batch, rew_batch
+
+    def get_rand_nonzero_idx(self, lookahead=1):
+        nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
+            0] - random.randint(0, lookahead)
+        while nonzero_idx % (self.current-lookahead-2) != nonzero_idx:
+            nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
+                0] - random.randint(0, lookahead)
+        start_idx = nonzero_idx
+        # for idx in range(start_idx, nonzero_idx):
+        #     if self.terminal[idx % self.memory_size]:
+        #         start_idx = idx + 1
+        return start_idx
+
+    def _encode_reward_action(self, idx, lookahead):
+        end_idx = idx + lookahead + 1  # make noninclusive
+        start_idx = idx
+        if start_idx < 0 and self.current != self.memory_size:
+            start_idx = 0
+        for idx in range(start_idx, end_idx - 1):
+            if self.terminals[idx % self.current]:
+                start_idx = idx + 1
+        missing_context = (lookahead + 1) - (end_idx - start_idx)
+        # if zero padding is needed for missing context
+        # or we are on the boundry of the buffer
+        if start_idx < 0 or missing_context > 0:
+            action = [0 for _ in range(missing_context)]
+            reward = [0 for _ in range(missing_context)]
+            for idx in range(start_idx, end_idx):
+                action.append(self.actions[(idx-1) % self.current])
+                reward.append(self.rewards[(idx-1) % self.current])
+            return np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
+        else:
+            # this optimization has potential to saves about 30% compute time \o/
+            return self.actions[start_idx-1:end_idx-1].reshape(-1, 1), self.rewards[start_idx-1:end_idx-1].reshape(-1, 1)
+
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count
 
