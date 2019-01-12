@@ -207,7 +207,7 @@ class ReplayMemory:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
-                if (nonzero == True) and (len(self.nonzero_rewards) > 0):
+                if nonzero == True:
                     index = np.random.choice(
                         self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
                 else:
@@ -228,8 +228,7 @@ class ReplayMemory:
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
-        rewards = np.array([self.rewards[i:i+self.lookahead+1]
-                            for i in indexes])[..., np.newaxis]
+        rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
