@@ -156,7 +156,7 @@ def train(sess, config):
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 state_batch, act_batch, next_state_batch = memory.GAN_sample()
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample(
-                    config.gan_batch_size, config.lookahead)
+                #     config.gan_batch_size, config.lookahead)
                 warmup_bool = []
                 for _ in range(config.lookahead):
                     if gen_step > config.gan_warmup:
