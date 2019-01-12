@@ -243,8 +243,7 @@ class ReplayMemory:
             while len(res) < n:
                 candidate = sampling_f()
                 # print(candidate)
-                if candidate not in res:
-                    res.append(candidate)
+                res.append(candidate)
             return res
         assert self.can_sample(lookahead)
         # idxes = sample_n_unique(lambda: random.randint(lookahead, self.current - 2 - lookahead), batch_size)
