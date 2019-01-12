@@ -207,7 +207,7 @@ class ReplayMemory:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
-                if nonzero == True:
+                if nonzero == True and (len(self.nonzero_rewards) > 0):
                     index = np.random.choice(
                         self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
                 else:
