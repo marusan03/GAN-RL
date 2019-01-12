@@ -228,7 +228,8 @@ class ReplayMemory:
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
-        rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
+        rewards = np.array([self.rewards[i:i+self.lookahead+1]
+                            for i in indexes])[:, np.newaxis, :]
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
