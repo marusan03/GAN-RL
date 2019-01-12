@@ -209,7 +209,7 @@ class ReplayMemory:
                 # sample one index (ignore states wraping over
                 if (nonzero == True) and (len(self.nonzero_rewards) > 0):
                     index = np.random.choice(
-                        self.nonzero_rewards, size=1)[0] + random.randint(0, self.lookahead)
+                        self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
                 else:
                     index = random.randint(
                         self.history_length + self.lookahead, self.count - (2 + self.lookahead))

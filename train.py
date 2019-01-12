@@ -134,9 +134,6 @@ def train(sess, config):
 
         # ε-greedy
         epsilon = exploration.value(step)
-        # epsilon = config.epsilon_end + max(0., (config.epsilon_start - config.epsilon_end) * (
-        #     config.epsilon_end_t - max(0., step - config.learn_start)) / config.epsilon_end_t)
-        # if step < config.learn_start or random.random() < epsilon:
         if random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
@@ -157,8 +154,8 @@ def train(sess, config):
         # Train
         if step > config.gan_learn_start and config.gats:
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                # state_batch, act_batch, next_state_batch = memory.GAN_sample()
-                state_batch, act_batch, next_state_batch = memory.GAN_sample(
+                state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                # state_batch, act_batch, next_state_batch = memory.GAN_sample(
                     config.gan_batch_size, config.lookahead)
                 warmup_bool = []
                 for _ in range(config.lookahead):
@@ -174,30 +171,19 @@ def train(sess, config):
                 gdm.summary, disc_summary, merged_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
 
-                # # test
-                # disc_summary = gdm.disc_train(
-                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch))
-
-                # state_batch, act_batch, next_state_batch = memory.GAN_sample(
-                #     config.gan_batch_size, config.lookahead)
-
-                # gdm.summary, merged_summary = gdm.gdm_train(
-                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
-                # # end
-
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
                 writer.add_summary(merged_summary, step)
                 gen_step += 1
 
             if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                # obs, act, rew = memory.reward_sample()
-                obs, act, rew = memory.reward_sample(
-                    config.gan_batch_size, config.lookahead)
-                # reward_obs, reward_act, reward_rew = memory.reward_sample(
-                #     nonzero=True)
+                obs, act, rew = memory.reward_sample()
+                # obs, act, rew = memory.reward_sample(
+                #     config.gan_batch_size, config.lookahead)
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    config.rp_batch_size, config.lookahead)
+                    nonzero=True)
+                # reward_obs, reward_act, reward_rew = memory.reward_sample(
+                #     config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
@@ -221,14 +207,12 @@ def train(sess, config):
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
-                # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
-                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
-                    config.batch_size, config.lookahead)
+                s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
 
                 if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
-                    # gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
-                    gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
-                        config.batch_size)
+                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
+                    # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
+                    #     config.batch_size)
                     gan_terminal_batch = np.full([config.batch_size], False)
                     trajectories = gdm.get_state(
                         gan_obs_batch, np.expand_dims(act_batch, axis=1))
