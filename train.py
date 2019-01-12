@@ -97,8 +97,8 @@ def train(sess, config):
         tree_base = base_generator()
 
     agent = Agent(sess, config, num_actions=config.num_actions)
-    memory = ReplayMemory(config)
-    # memory = ReplayMemory(config, model_dir)
+    # memory = ReplayMemory(config)
+    memory = ReplayMemory(config, model_dir)
     history = History(config)
 
     tf.global_variables_initializer().run()
