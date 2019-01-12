@@ -264,7 +264,7 @@ class ReplayMemory:
         seq = [self._encode_reward_action(idx + 1, lookahead) for idx in idxes]
         act_batch = np.concatenate(
             [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
-        rew_batch = np.concatenate([seq[i][1][np.newaxis, :]
+        rew_batch = np.concatenate([seq[i][1][np.newaxis, :, 0]
                                     for i in range(len(idxes))], 0)
         return self.reward_states, act_batch, rew_batch
 
