@@ -180,10 +180,10 @@ def train(sess, config):
                 obs, act, rew = memory.reward_sample()
                 # obs, act, rew = memory.reward_sample2(
                 #     config.gan_batch_size, config.lookahead)
-                reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=True)
-                # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
-                #     config.rp_batch_size, config.lookahead)
+                # reward_obs, reward_act, reward_rew = memory.reward_sample(
+                #     nonzero=True)
+                reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
+                    config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
