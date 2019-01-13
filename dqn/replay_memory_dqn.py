@@ -247,8 +247,8 @@ class ReplayMemory:
             return res
         assert self.can_sample(lookahead)
         # idxes = sample_n_unique(lambda: random.randint(lookahead, self.current - 2 - lookahead), batch_size)
-        idxes = sample_n_unique(lambda: (self.count-random.randint(lookahead+self.history_length, 60000)) %
-                                (self.current-lookahead-self.history_length), batch_size)
+        idxes = sample_n_unique(lambda: (self.current-random.randint(lookahead+self.history_length, 60000)) %
+                                (self.count-lookahead-self.history_length), batch_size)
         return self.reward_encode_sample(idxes, lookahead)
 
     def nonzero_reward_sample(self, batch_size, lookahead):
