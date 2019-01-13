@@ -213,6 +213,7 @@ class ReplayMemory:
                     while nonzero_index % (self.count-self.lookahead-2) != nonzero_index:
                         nonzero_index = np.random.choice(self.nonzero_rewards, size=1)[
                             0] - random.randint(0, self.lookahead)
+                    index = nonzero_index
                 else:
                     index = self.current - random.randint(
                         self.lookahead+self.history_length, 60000) % (self.count - self.lookahead - self.history_length)
