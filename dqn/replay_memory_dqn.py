@@ -211,8 +211,8 @@ class ReplayMemory:
                     index = np.random.choice(
                         self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
                 else:
-                    index = random.randint(
-                        self.history_length + self.lookahead, self.count - (2 + self.lookahead))
+                    index = self.current - random.randint(
+                        self.lookahead+self.history_length, 60000) % (self.count - self.lookahead - self.history_length)
                 # if wraps over current pointer, then get new one
                 if index >= self.current and index - (self.history_length + self.lookahead) < self.current:
                     continue
