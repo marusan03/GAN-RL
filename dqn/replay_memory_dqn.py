@@ -208,8 +208,11 @@ class ReplayMemory:
             while True:
                 # sample one index (ignore states wraping over
                 if nonzero == True and (len(self.nonzero_rewards) > 0):
-                    index = np.random.choice(
+                    nonzero_index = np.random.choice(
                         self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
+                    while nonzero_index % (self.count-self.lookahead-2) != nonzero_index:
+                        nonzero_index = np.random.choice(self.nonzero_rewards, size=1)[
+                            0] - random.randint(0, self.lookahead)
                 else:
                     index = self.current - random.randint(
                         self.lookahead+self.history_length, 60000) % (self.count - self.lookahead - self.history_length)
@@ -271,7 +274,7 @@ class ReplayMemory:
     def get_rand_nonzero_idx(self, lookahead=1):
         nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
             0] - random.randint(0, lookahead)
-        while nonzero_idx % (self.current-lookahead-2) != nonzero_idx:
+        while nonzero_idx % (self.count-lookahead-2) != nonzero_idx:
             nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
                 0] - random.randint(0, lookahead)
         start_idx = nonzero_idx
