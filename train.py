@@ -70,7 +70,9 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.histogram(
                 tag, summary_placeholders[tag])
 
-    config.num_actions = env.action_size
+    # config.num_actions = env.action_size
+    config.num_actions = 3
+
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
     exploration_gan = LinearSchedule(50000, 0.01)
 
