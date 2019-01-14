@@ -145,8 +145,12 @@ def train(sess, config):
                 action = agent.get_action(
                     norm_frame_Q(current_state))
 
+        apply_action = action
+        if int(action != 0):
+            apply_action = action + 1
+
         # Observe
-        screen, reward, terminal = env.act(action, is_training=True)
+        screen, reward, terminal = env.act(apply_action, is_training=True)
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
         memory.add(screen, reward, action, terminal)
