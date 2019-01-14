@@ -329,11 +329,9 @@ class ReplayMemory:
             frames = [repeat_frame for _ in range(missing_context)]
             for idx in range(start_idx, end_idx):
                 frames.append(self.screens[idx % self.count])
-            print(np.concatenate(frames, 0).shape)
-            return np.concatenate(frames, 0)
+            return frames
         else:
             # this optimization has potential to saves about 30% compute time \o/
-            print(self.screens[start_idx:end_idx].shape)
             return self.screens[start_idx:end_idx]
 
     def GAN_encode_observation_action(self, idx, lookahead):
@@ -361,7 +359,7 @@ class ReplayMemory:
                 frames.append(self.screens[idx % self.count])
                 action.append(self.actions[idx-1 % self.count])
                 reward.append(self.rewards[idx-1 % self.count])
-            return np.concatenate(frames, 0), np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
+            return frames, np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
         else:
             # this optimization has potential to saves about 30% compute time \o/
             return self.screens[start_idx:end_idx], self.actions[start_idx - 1:end_idx - 1].reshape(-1, 1), self.rewards[start_idx - 1:end_idx - 1].reshape(-1, 1)
