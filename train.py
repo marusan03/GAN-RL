@@ -147,6 +147,7 @@ def train(sess, config):
                 action = agent.get_action(
                     norm_frame_Q(current_state))
 
+        # GATS用?
         apply_action = action
         if int(action != 0):
             apply_action = action + 1
