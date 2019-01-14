@@ -329,7 +329,7 @@ class ReplayMemory:
             frames = [repeat_frame for _ in range(missing_context)]
             for idx in range(start_idx, end_idx):
                 frames.append(self.screens[idx % self.count])
-            return frames
+            return np.array(frames)
         else:
             # this optimization has potential to saves about 30% compute time \o/
             return self.screens[start_idx:end_idx]
@@ -359,7 +359,7 @@ class ReplayMemory:
                 frames.append(self.screens[idx % self.count])
                 action.append(self.actions[idx-1 % self.count])
                 reward.append(self.rewards[idx-1 % self.count])
-            return frames, np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
+            return np.array(frames), np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
         else:
             # this optimization has potential to saves about 30% compute time \o/
             return self.screens[start_idx:end_idx], self.actions[start_idx - 1:end_idx - 1].reshape(-1, 1), self.rewards[start_idx - 1:end_idx - 1].reshape(-1, 1)
