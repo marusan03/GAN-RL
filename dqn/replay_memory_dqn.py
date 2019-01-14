@@ -8,6 +8,15 @@ import numpy as np
 from .utils import save_npy, load_npy
 
 
+def sample_n_unique(sampling_f, n):
+    res = []
+    while len(res) < n:
+        candidate = sampling_f()
+        # print(candidate)
+        res.append(candidate)
+    return res
+
+
 class GANReplayMemory(object):
     def __init__(self, config):
         self.cnn_format = config.cnn_format
@@ -241,19 +250,34 @@ class ReplayMemory:
 
     # test code
 
+    def GAN_sample2(self, batch_size, lookahead):
+        assert self.can_sample(batch_size)
+        # idxes = sample_n_unique(lambda: random.randint(0, self.count-2-lookahead), batch_size)
+        idxes = sample_n_unique(lambda: (self.current-random.randint(lookahead+self.history_length, 60000)) % (
+            self.count-2*lookahead-2*self.history_length-1)+lookahead+self.history_length, batch_size)
+        self.current
+        return self.GAN_encode_sample(idxes, lookahead)
+
     def reward_sample2(self, batch_size, lookahead):
-        def sample_n_unique(sampling_f, n):
-            res = []
-            while len(res) < n:
-                candidate = sampling_f()
-                # print(candidate)
-                res.append(candidate)
-            return res
-        assert self.can_sample(lookahead)
+        assert self.can_sample(batch_size)
         # idxes = sample_n_unique(lambda: random.randint(lookahead, self.current - 2 - lookahead), batch_size)
         idxes = sample_n_unique(lambda: (self.current-random.randint(lookahead+self.history_length, 60000)) %
                                 (self.count-lookahead-self.history_length), batch_size)
         return self.reward_encode_sample(idxes, lookahead)
+
+    def GAN_encode_sample(self, idxes, lookahead):
+        obs_batch = np.concatenate(
+            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
+        gan_seq = [self.GAN_encode_observation_action(
+            idx + 1, lookahead) for idx in idxes]
+        act_batch = np.concatenate(
+            [gan_seq[i][1][np.newaxis, :, 0] for i in range(len(idxes))], 0)
+        # reward_batch = np.concatenate(
+        #     [gan_seq[i][2][np.newaxis, :, 0] for i in range(len(idxes))], 0)
+        next_obs_batch = np.concatenate(
+            [gan_seq[i][0][np.newaxis, :] for i in range(len(idxes))], 0)
+
+        return obs_batch, act_batch, next_obs_batch
 
     def nonzero_reward_sample(self, batch_size, lookahead):
         # assert self.can_sample_nonzero_rewards(lookahead)
@@ -283,6 +307,64 @@ class ReplayMemory:
         #     if self.terminal[idx % self.memory_size]:
         #         start_idx = idx + 1
         return start_idx
+
+    def _encode_observation(self, idx):
+        end_idx = idx + 1  # make noninclusive
+        start_idx = end_idx - self.history_length
+        # this checks if we are using low-dimensional observations, such as RAM
+        # state, in which case we just directly return the latest RAM.
+        if len(self.screens.shape) == 2:
+            return self.screens[end_idx-1]
+        # if there weren't enough frames ever in the buffer for context
+        if start_idx < 0 and self.count != self.memory_size:
+            start_idx = 0
+        for idx in range(start_idx, end_idx - 1):
+            if self.terminals[idx % self.count]:
+                start_idx = idx + 1
+        missing_context = self.history_length - (end_idx - start_idx)
+        # if zero padding is needed for missing context
+        # or we are on the boundry of the buffer
+        repeat_frame = self.screens[start_idx % self.count]
+        if start_idx < 0 or missing_context > 0:
+            frames = [repeat_frame for _ in range(missing_context)]
+            for idx in range(start_idx, end_idx):
+                frames.append(self.screens[idx % self.count])
+            return np.concatenate(frames, 0)
+        else:
+            # this optimization has potential to saves about 30% compute time \o/
+            img_h, img_w = self.screens.shape[2], self.screens.shape[3]
+            return self.screens[start_idx:end_idx].reshape(-1, img_h, img_w)
+
+    def GAN_encode_observation_action(self, idx, lookahead):
+        end_idx = idx + lookahead  # make noninclusive
+        start_idx = idx
+        # this checks if we are using low-dimensional observations, such as RAM
+        # state, in which case we just directly return the latest RAM.
+        if len(self.screens.shape) == 2:
+            return self.screens[end_idx-1]
+        # if there weren't enough frames ever in the buffer for context
+        if start_idx < 0 and self.count != self.memory_size:
+            start_idx = 0
+        for idx in range(start_idx, end_idx - 1):
+            if self.terminals[idx % self.count]:
+                start_idx = idx + 1
+        missing_context = lookahead - (end_idx - start_idx)
+        # if zero padding is needed for missing context
+        # or we are on the boundry of the buffer
+        repeat_frame = self.screens[start_idx % self.count]
+        if start_idx < 0 or missing_context > 0:
+            frames = [repeat_frame for _ in range(missing_context)]
+            action = [0 for _ in range(missing_context)]
+            reward = [0 for _ in range(missing_context)]
+            for idx in range(start_idx, end_idx):
+                frames.append(self.screens[idx % self.count])
+                action.append(self.actions[idx-1 % self.count])
+                reward.append(self.rewards[idx-1 % self.count])
+            return np.concatenate(frames, 0), np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
+        else:
+            # this optimization has potential to saves about 30% compute time \o/
+            img_h, img_w = self.screens.shape[2], self.screens.shape[3]
+            return self.screens[start_idx:end_idx].reshape(-1, img_h, img_w), self.actions[start_idx - 1:end_idx - 1].reshape(-1, 1), self.rewards[start_idx - 1:end_idx - 1].reshape(-1, 1)
 
     def _encode_reward_action(self, idx, lookahead):
         end_idx = idx + lookahead + 1  # make noninclusive
