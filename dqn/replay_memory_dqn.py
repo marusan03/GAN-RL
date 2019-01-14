@@ -287,8 +287,8 @@ class ReplayMemory:
         return self.reward_encode_sample(idxes, lookahead)
 
     def reward_encode_sample(self, idxes, lookahead=1):
-        self.reward_states = np.array(
-            [self.getState(idx - 1) for idx in idxes])
+        self.reward_states = np.concatenate(
+            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
         seq = [self._encode_reward_action(idx + 1, lookahead) for idx in idxes]
         act_batch = np.concatenate(
             [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
@@ -332,8 +332,7 @@ class ReplayMemory:
             return np.concatenate(frames, 0)
         else:
             # this optimization has potential to saves about 30% compute time \o/
-            img_h, img_w = self.screens.shape[2], self.screens.shape[3]
-            return self.screens[start_idx:end_idx].reshape(-1, img_h, img_w)
+            return self.screens[start_idx:end_idx]
 
     def GAN_encode_observation_action(self, idx, lookahead):
         end_idx = idx + lookahead  # make noninclusive
@@ -363,8 +362,7 @@ class ReplayMemory:
             return np.concatenate(frames, 0), np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
         else:
             # this optimization has potential to saves about 30% compute time \o/
-            img_h, img_w = self.screens.shape[2], self.screens.shape[3]
-            return self.screens[start_idx:end_idx].reshape(-1, img_h, img_w), self.actions[start_idx - 1:end_idx - 1].reshape(-1, 1), self.rewards[start_idx - 1:end_idx - 1].reshape(-1, 1)
+            return self.screens[start_idx:end_idx], self.actions[start_idx - 1:end_idx - 1].reshape(-1, 1), self.rewards[start_idx - 1:end_idx - 1].reshape(-1, 1)
 
     def _encode_reward_action(self, idx, lookahead):
         end_idx = idx + lookahead + 1  # make noninclusive
