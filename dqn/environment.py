@@ -18,7 +18,7 @@ class Environment(object):
         self.dims = (screen_width, screen_height)
 
         # cripping
-        self._screen_buffer = deque(maxlen=2)
+        # self._screen_buffer = deque(maxlen=2)
 
         self._screen = None
         self.reward = 0
@@ -61,8 +61,8 @@ class Environment(object):
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84])
         # cripping
-        self._screen_buffer.append(x_t)
-        x_t = np.max(np.stack(self._screen_buffer), axis=0)
+        # self._screen_buffer.append(x_t)
+        # x_t = np.max(np.stack(self._screen_buffer), axis=0)
         return x_t
 
     @property
