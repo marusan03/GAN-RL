@@ -36,9 +36,9 @@ class Environment(object):
         for _ in range(random.randint(0, self.random_start - 1)):
             self._step(0)
         # cripping
-        self._screen_buffer.clear()
+        # self._screen_buffer.clear()
         self.render()
-        self._screen_buffer.append(self.screen)
+        # self._screen_buffer.append(self.screen)
 
         return self.screen, 0, 0, self.terminal
 
