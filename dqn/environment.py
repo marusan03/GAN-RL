@@ -59,10 +59,15 @@ class Environment(object):
         resized_screen = img.resize((84, 110), Image.BILINEAR)
         resized_screen = np.array(resized_screen)
         x_t = resized_screen[18:102, :]
-        x_t = np.reshape(x_t, [84, 84])
+
+        # x_t = np.reshape(x_t, [84, 84])
+
         # cripping
         # self._screen_buffer.append(x_t)
         # x_t = np.max(np.stack(self._screen_buffer), axis=0)
+        # 2値化？
+        x_t = np.reshape(x_t, [84, 84, 1])
+        imresize(frame.mean(2), (img_h, img_w))
         return x_t
 
     @property
