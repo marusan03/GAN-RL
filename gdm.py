@@ -398,6 +398,6 @@ class GDM():
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='opt')):
             disc_train_op = tf.train.MomentumOptimizer(
-                learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
+                learning_rate=1e-5, momentum=0.1, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
 
         return gdm_train_op, disc_train_op, gdm_summary, disc_summary, merged_summary
