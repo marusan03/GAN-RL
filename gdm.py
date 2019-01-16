@@ -30,9 +30,9 @@ class GDM():
         self.lambda_l1 = self.config.lambda_l1
         self.lambda_l2 = self.config.lambda_l2
 
-        # self.initializer = tf.truncated_normal_initializer(0.0, 0.02)
+        self.initializer = tf.truncated_normal_initializer(0.0, 0.02)
         # self.batch_norm_initializer = tf.random_normal_initializer(1.0, 0.02)
-        self.initializer = None
+        # self.initializer = None
         self.batch_norm_initializer = None
 
         self.action = tf.placeholder(
@@ -119,42 +119,42 @@ class GDM():
         with tf.variable_scope('Encoder'):
 
             encode1 = lib.nn.conv2d.Conv2D(
-                'Conv1', in_channels, ngf, 4, state, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv1', in_channels, ngf, 4, state, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             encode1 = tf.layers.batch_normalization(
                 encode1, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN1')
             encode1 = tf.nn.leaky_relu(encode1, alpha=-0.2, name='leaky_ralu1')
             # (None, 42, 42, 32)
 
             encode2 = lib.nn.conv2d.Conv2D(
-                'Conv2', ngf, ngf*2, 4, encode1, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, pytorch_biases=True, padding='VALID', data_format=self.data_format)
+                'Conv2', ngf, ngf*2, 4, encode1, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, padding='VALID', data_format=self.data_format)
             encode2 = tf.layers.batch_normalization(
                 encode2, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN2')
             encode2 = tf.nn.leaky_relu(encode2, alpha=-0.2, name='leaky_ralu2')
             # (None, 20, 20, 64)
 
             encode3 = lib.nn.conv2d.Conv2D(
-                'Conv3', ngf*2, ngf*4, 4, encode2, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv3', ngf*2, ngf*4, 4, encode2, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             encode3 = tf.layers.batch_normalization(
                 encode3, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN3')
             encode3 = tf.nn.leaky_relu(encode3, alpha=-0.2, name='leaky_ralu3')
             # (None, 10, 10, 128)
 
             encode4 = lib.nn.conv2d.Conv2D(
-                'Conv4', ngf*4, ngf*8, 4, encode3, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv4', ngf*4, ngf*8, 4, encode3, initializer=self.initializer, weight_norm_scale=1e-3, stride=2, padding_size=1, data_format=self.data_format)
             encode4 = tf.layers.batch_normalization(
                 encode4, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN4')
             encode4 = tf.nn.leaky_relu(encode4, alpha=-0.2, name='leaky_ralu4')
             # (None, 5, 5, 256)
 
             encode5 = lib.nn.conv2d.Conv2D(
-                'Conv5', ngf*8, ngf*8, 3, encode4, initializer=self.initializer, weight_norm_scale=1e-3, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv5', ngf*8, ngf*8, 3, encode4, initializer=self.initializer, weight_norm_scale=1e-3, stride=1, padding_size=1, data_format=self.data_format)
             encode5 = tf.layers.batch_normalization(
                 encode5, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN5')
             encode5 = tf.nn.leaky_relu(encode5, alpha=-0.2, name='leaky_ralu5')
             # (None, 5, 5, 256)
 
             encode6 = lib.nn.conv2d.Conv2D(
-                'Conv6', ngf*8, ngf*8, 3, encode5, initializer=self.initializer, weight_norm_scale=1e-3, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv6', ngf*8, ngf*8, 3, encode5, initializer=self.initializer, weight_norm_scale=1e-3, stride=1, padding_size=1, data_format=self.data_format)
             encode6 = tf.layers.batch_normalization(
                 encode6, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN6')
             encode6 = tf.nn.leaky_relu(encode6, alpha=-0.2, name='leaky_ralu6')
@@ -251,28 +251,28 @@ class GDM():
     def build_discriminator(self, state, action, is_training=False, update_collection=None, lookahead=1, ngf=64):
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv1', self.history_length + lookahead, ngf, 8, state, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=4, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv1', self.history_length + lookahead, ngf, 8, state, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=4, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN1')
         output = tf.nn.leaky_relu(output, -0.2)
         # (None, 20, 20, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv2', ngf, ngf * 2, 4, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv2', ngf, ngf * 2, 4, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=2, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN2')
         output = tf.nn.leaky_relu(output, -0.2)
         # (None, 10, 10, 128)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv3', ngf * 2, ngf * 4, 4, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv3', ngf * 2, ngf * 4, 4, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=2, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN3')
         output = tf.nn.leaky_relu(output, -0.2)
         # (None, 7, 7, 256)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv.4', ngf * 4, 16, 3, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv.4', ngf * 4, 16, 3, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection, stride=1, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, gamma_initializer=self.batch_norm_initializer, training=is_training, name='BN4')
         # (None, 5, 5, 16)
@@ -291,7 +291,7 @@ class GDM():
                            self.concat_dim, name='concat1')
 
         output = lib.nn.linear.Linear(
-            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, pytorch_biases=True, update_collection=update_collection)
+            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection)
         output = tf.nn.leaky_relu(output, -0.2)
         # (None, 18)
 
@@ -300,7 +300,7 @@ class GDM():
         # (None, 18+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'Dence2', 18 + self.num_actions*lookahead, 1, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, pytorch_biases=True, update_collection=update_collection)
+            'Dence2', 18 + self.num_actions*lookahead, 1, output, initializer=self.initializer, weight_norm_scale=0.1, spectral_norm=True, update_collection=update_collection)
         # (None, 3*lookahead)
 
         output = tf.reshape(output, [-1])
