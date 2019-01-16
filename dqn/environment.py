@@ -67,7 +67,7 @@ class Environment(object):
         # x_t = np.max(np.stack(self._screen_buffer), axis=0)
         # 2値化？
         x_t = np.reshape(x_t, [84, 84, 1])
-        imresize(frame.mean(2), (img_h, img_w))
+        imresize(x_t.mean(2), (84, 84))
         return x_t
 
     @property
