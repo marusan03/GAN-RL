@@ -188,8 +188,7 @@ def train(sess, config):
                 # gdm.summary, disc_summary, merged_summary = gdm.train(
                 #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
 
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
+                writer.add_summary([gdm.summary, disc_summary], step)
                 writer.add_summary(merged_summary, step)
                 gen_step += 1
 

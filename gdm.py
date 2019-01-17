@@ -378,7 +378,7 @@ class GDM():
 
 
         gdm_summary = tf.summary.scalar('gdm_loss', gdm_loss)
-        disc_summary = tf.summary.scalar('disc_loss', disc_loss)
+        disc_summary = tf.summary.scalar('disc_loss', -disc_loss)
 
         with tf.name_scope('weight_decay'):
             gdm_weight_decay = tf.losses.get_regularization_loss(
