@@ -396,10 +396,10 @@ class GDM():
         # For batch normalization
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='gdm')):
             gdm_train_op = tf.contrib.opt.AdamWOptimizer(
-                weight_decay=self.gdm_weight_decay, learning_rate=1e-4, beta1=0.5, beta2=0.999, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params)
+                weight_decay=self.gdm_weight_decay, learning_rate=1e-4, beta1=0.5, beta2=0.999, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params, decay_var_list=gdm_params)
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='opt')):
             disc_train_op = tf.contrib.opt.MomentumWOptimizer(
-                weight_decay=self.disc_weight_decay, learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
+                weight_decay=self.disc_weight_decay, learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params, decay_var_list=disc_params)
 
         return gdm_train_op, disc_train_op, gdm_summary, disc_summary, merged_summary
