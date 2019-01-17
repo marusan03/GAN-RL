@@ -61,6 +61,7 @@ class GDMConfig(object):
     disc_ngf = 24
     gdm_weight_decay = 1e-3
     disc_weight_decay = 0.1
+    rp_weight_decay = 1e-4
     gats = True
     rollout_frequency = 50000
     gan_warmup = 5000
