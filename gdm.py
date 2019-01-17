@@ -376,10 +376,6 @@ class GDM():
             merged_summary = tf.summary.merge(
                 [gan_summary, l1_summary, l2_summary], name='merged_summary')
 
-
-        gdm_summary = tf.summary.scalar('gdm_loss', gdm_loss)
-        disc_summary = tf.summary.scalar('disc_loss', -disc_loss)
-
         with tf.name_scope('weight_decay'):
             gdm_weight_decay = tf.losses.get_regularization_loss(
                 scope='gdm', name='gdm_weight_decay')
@@ -388,6 +384,9 @@ class GDM():
 
             gdm_loss += gdm_weight_decay
             disc_loss += disc_weight_decay
+
+        gdm_summary = tf.summary.scalar('gdm_loss', gdm_loss)
+        disc_summary = tf.summary.scalar('disc_loss', -disc_loss)
 
         gdm_params = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='gdm')
