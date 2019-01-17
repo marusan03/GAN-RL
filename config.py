@@ -59,8 +59,8 @@ class GDMConfig(object):
     lambda_l2 = 80.
     gdm_ngf = 24
     disc_ngf = 24
-    gdm_weight_norm_scale = 1e-3
-    disc_weight_norm_scale = 0.1
+    gdm_weight_decay = 1e-3
+    disc_weight_decay = 0.1
     gats = True
     rollout_frequency = 50000
     gan_warmup = 5000
