@@ -394,7 +394,7 @@ class GDM():
         # For batch normalization
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='gdm')):
             gdm_train_op = tf.train.AdamOptimizer(
-                learning_rate=1e-4, beta1=0.5, beta2=0.001, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params)
+                learning_rate=1e-4, beta1=0.5, beta2=0.999, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params)
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='opt')):
             disc_train_op = tf.train.MomentumOptimizer(
