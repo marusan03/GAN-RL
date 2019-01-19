@@ -383,10 +383,9 @@ class GDM():
             l2_loss = tf.reduce_mean(tf.square(difference))
             l2_summary = tf.summary.scalar('l2_loss', l2_loss)
             gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
+            gan_summary = tf.summary.scalar('gdm_L1_L2_loss', -gdm_loss)
             merged_summary = tf.summary.merge(
                 [gan_summary, l1_summary, l2_summary], name='merged_summary')
-
-        gan_summary = tf.summary.scalar('gdm_L1_L2_loss', -gdm_loss)
 
         gdm_params = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='gdm')
