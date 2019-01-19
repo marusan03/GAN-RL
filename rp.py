@@ -79,7 +79,7 @@ class RP():
         # (None, 6272)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, pytorch_biases=True)
+            'RP_Dence.1', 6272, 512, output, initialization='pytorch', weight_decay_scale=self.rp_weight_decay, pytorch_biases=True)
         output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
@@ -93,7 +93,7 @@ class RP():
         # (None, 512+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, pytorch_biases=True)
+            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initialization='pytorch', weight_decay_scale=self.rp_weight_decay, pytorch_biases=True)
         # (None, 3*lookahead)
 
         return output

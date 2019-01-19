@@ -296,7 +296,7 @@ class GDM():
                            self.concat_dim, name='concat1')
 
         output = lib.nn.linear.Linear(
-            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initializer=self.initializer, weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
+            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 18)
 
@@ -305,7 +305,7 @@ class GDM():
         # (None, 18+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'Dence2', 18 + self.num_actions*lookahead, 1, output, initializer=self.initializer, weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
+            'Dence2', 18 + self.num_actions*lookahead, 1, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         # (None, 3*lookahead)
 
         output = tf.reshape(output, [-1])

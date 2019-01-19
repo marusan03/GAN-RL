@@ -114,6 +114,15 @@ def Linear(
                     size=(input_dim, output_dim)
                 ).astype('float32')
 
+            elif initialization == 'pytorch':
+                stdev = np.sqrt(1./input_dim)
+                weight_values = tf.random_uniform(
+                    shape=(input_dim, output_dim),
+                    dtype=tf.float32,
+                    minval=-1*stdev,
+                    maxval=stdev
+                )
+
             else:
 
                 raise Exception('Invalid initialization!')
