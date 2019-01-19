@@ -16,7 +16,7 @@ def Conv2D(
     initializer=None,
     he_init=True,
     stride=1,
-    # weight_norm_scale=0.,
+    weight_norm_scale=0.,
     spectral_norm=None,
     update_collection=None,
     biases=True,
@@ -55,11 +55,11 @@ def Conv2D(
             shape = (filter_size, filter_size, input_dim, output_dim)
 
         # weight normarization
-        # regularizer = tf.contrib.layers.l2_regularizer(
-        #     scale=weight_norm_scale)
+        regularizer = tf.contrib.layers.l2_regularizer(
+            scale=weight_norm_scale)
 
         filters = tf.get_variable(
-            'filters', shape=shape, initializer=filter_values)# , regularizer=regularizer)
+            'filters', shape=shape, initializer=filter_values, regularizer=regularizer)
 
         # stride
         strides = []

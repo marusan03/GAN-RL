@@ -61,17 +61,17 @@ class RP():
     def build_rp(self, state, action):
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
+            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
+            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
+            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu3')
         # (None, 7, 7, 128)
 
@@ -79,7 +79,7 @@ class RP():
         # (None, 6272)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, pytorch_biases=True)
+            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, pytorch_biases=True)
         output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
@@ -93,7 +93,7 @@ class RP():
         # (None, 512+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, pytorch_biases=True)
+            'RP_Dence.2', 512+self.num_actions*(self.lookahead+1), self.num_rewards*(self.lookahead+1), output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, pytorch_biases=True)
         # (None, 3*lookahead)
 
         return output
@@ -106,15 +106,15 @@ class RP():
             loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=reward[:, ind], logits=outputs))
 
-        # with tf.name_scope('weight_decay'):
-        #     rp_weight_decay = tf.losses.get_regularization_loss(
-        #         scope='RP', name='rp_weight_decay')
+        with tf.name_scope('weight_decay'):
+            rp_weight_decay = tf.losses.get_regularization_loss(
+                scope='RP', name='rp_weight_decay')
 
-        # loss += rp_weight_decay
+        loss += rp_weight_decay
 
         rp_summary = tf.summary.scalar('rp_loss', loss)
 
-        rp_train_op = tf.contrib.opt.AdamWOptimizer(
-            weight_decay=self.rp_weight_decay, learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
+        rp_train_op = tf.train.AdamOptimizer(
+            learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
 
         return rp_train_op, rp_summary

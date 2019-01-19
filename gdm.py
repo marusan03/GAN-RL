@@ -27,14 +27,14 @@ class GDM():
         self.data_format = self.config.cnn_format
         self.gdm_ngf = self.config.gdm_ngf
         self.disc_ngf = self.config.disc_ngf
-        self.gdm_weight_decay = self.config.gdm_weight_decay
-        self.disc_weight_decay = self.config.disc_weight_decay
+        self.gdm_weight_norm_scale = self.config.gdm_weight_norm_scale
+        self.disc_weight_norm_scale = self.config.disc_weight_norm_scale
         self.lambda_l1 = self.config.lambda_l1
         self.lambda_l2 = self.config.lambda_l2
 
         self.initializer = tf.truncated_normal_initializer(0.0, 0.02)
         self.beta_initializer = tf.zeros_initializer()
-        # self.gamma_initializer = tf.random_normal_initializer(1.0, 0.02)
+        self.gamma_initializer = tf.random_normal_initializer(1.0, 0.02)
         # self.initializer = None
         self.gamma_initializer = None
 
@@ -69,7 +69,8 @@ class GDM():
         with tf.variable_scope('gdm', reuse=True):
             self.state = norm_state_Q_GAN(self.build_gdm(
                 self.trajectories[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
-            self.trajectories = tf.concat([self.trajectories, self.state], axis=1)
+            self.trajectories = tf.concat(
+                [self.trajectories, self.state], axis=1)
 
         with tf.name_scope('opt'):
             self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary, self.merged_summary = self.build_training_op()
@@ -82,7 +83,8 @@ class GDM():
     def rollout(self, state, num_rollout):
         actions = []
         for _ in range(num_rollout):
-            action = [[random.randint(0, self.num_actions-1) for _ in range(self.lookahead)]]
+            action = [[random.randint(0, self.num_actions-1)
+                                      for _ in range(self.lookahead)]]
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
                 self.pre_state: state[:, -self.history_length:, ...], self.action: action, self.is_training: False})
             state = np.concatenate([state, predicted_state], axis=1)
@@ -122,44 +124,44 @@ class GDM():
         with tf.variable_scope('Encoder'):
 
             encode1 = lib.nn.conv2d.Conv2D(
-                'Conv1', in_channels, ngf, 4, state, initializer=self.initializer, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv1', in_channels, ngf, 4, state, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
             encode1 = tf.layers.batch_normalization(
-                encode1, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN1')
+                encode1, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN1')
             encode1 = tf.nn.leaky_relu(encode1, alpha=0.2, name='leaky_ralu1')
             # (None, 42, 42, 32)
 
             encode2 = lib.nn.conv2d.Conv2D(
-                'Conv2', ngf, ngf*2, 4, encode1, initializer=self.initializer, stride=2, pytorch_biases=True, padding='VALID', data_format=self.data_format)
+                'Conv2', ngf, ngf*2, 4, encode1, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, pytorch_biases=True, padding='VALID', data_format=self.data_format)
             encode2 = tf.layers.batch_normalization(
-                encode2, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN2')
+                encode2, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN2')
             encode2 = tf.nn.leaky_relu(encode2, alpha=0.2, name='leaky_ralu2')
             # (None, 20, 20, 64)
 
             encode3 = lib.nn.conv2d.Conv2D(
-                'Conv3', ngf*2, ngf*4, 4, encode2, initializer=self.initializer, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv3', ngf*2, ngf*4, 4, encode2, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
             encode3 = tf.layers.batch_normalization(
-                encode3, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN3')
+                encode3, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN3')
             encode3 = tf.nn.leaky_relu(encode3, alpha=0.2, name='leaky_ralu3')
             # (None, 10, 10, 128)
 
             encode4 = lib.nn.conv2d.Conv2D(
-                'Conv4', ngf*4, ngf*8, 4, encode3, initializer=self.initializer, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv4', ngf*4, ngf*8, 4, encode3, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
             encode4 = tf.layers.batch_normalization(
-                encode4, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN4')
+                encode4, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN4')
             encode4 = tf.nn.leaky_relu(encode4, alpha=0.2, name='leaky_ralu4')
             # (None, 5, 5, 256)
 
             encode5 = lib.nn.conv2d.Conv2D(
-                'Conv5', ngf*8, ngf*8, 3, encode4, initializer=self.initializer, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv5', ngf*8, ngf*8, 3, encode4, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
             encode5 = tf.layers.batch_normalization(
-                encode5, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN5')
+                encode5, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN5')
             encode5 = tf.nn.leaky_relu(encode5, alpha=0.2, name='leaky_ralu5')
             # (None, 5, 5, 256)
 
             encode6 = lib.nn.conv2d.Conv2D(
-                'Conv6', ngf*8, ngf*8, 3, encode5, initializer=self.initializer, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+                'Conv6', ngf*8, ngf*8, 3, encode5, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
             encode6 = tf.layers.batch_normalization(
-                encode6, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN6')
+                encode6, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN6')
             encode6 = tf.nn.leaky_relu(encode6, alpha=0.2, name='leaky_ralu6')
             # (None, 5, 5, 256)
 
@@ -188,9 +190,9 @@ class GDM():
             concat1 = tf.concat(
                 [encode6, action_tile1], self.concat_dim, name='concat1')
             decode1 = lib.nn.deconv2d.Deconv2D(
-                'Deconv1', ngf * 8 + self.num_actions*lookahead, ngf * 8, 3, concat1, initializer=self.initializer, stride=1, biases=False, padding_size=1, data_format=self.data_format)
+                'Deconv1', ngf * 8 + self.num_actions*lookahead, ngf * 8, 3, concat1, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=1, biases=False, padding_size=1, data_format=self.data_format)
             decode1 = tf.layers.batch_normalization(
-                decode1, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN1')
+                decode1, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN1')
             decode1 = tf.nn.relu(decode1, name='relu1')
             # (None, 5, 5, 256)
 
@@ -199,9 +201,9 @@ class GDM():
             concat2 = tf.concat(
                 [encode5, decode1, action_tile2], self.concat_dim, name='concat2')
             decode2 = lib.nn.deconv2d.Deconv2D(
-                'Deconv2', ngf*8*2+self.num_actions*lookahead, ngf*8, 3, concat2, initializer=self.initializer, stride=1, biases=False, padding_size=1, data_format=self.data_format)
+                'Deconv2', ngf*8*2+self.num_actions*lookahead, ngf*8, 3, concat2, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=1, biases=False, padding_size=1, data_format=self.data_format)
             decode2 = tf.layers.batch_normalization(
-                decode2, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN2')
+                decode2, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN2')
             decode2 = tf.nn.relu(decode2, name='relu2')
             # (None, 5, 5, 256)
 
@@ -210,9 +212,9 @@ class GDM():
             concat3 = tf.concat(
                 [encode4, decode2, action_tile3], self.concat_dim, name='concat3')
             decode3 = lib.nn.deconv2d.Deconv2D(
-                'Deconv3', ngf*8*2+self.num_actions*lookahead, ngf*4, 4, concat3, initializer=self.initializer, stride=2, biases=False, padding_size=1, data_format=self.data_format)
+                'Deconv3', ngf*8*2+self.num_actions*lookahead, ngf*4, 4, concat3, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, biases=False, padding_size=1, data_format=self.data_format)
             decode3 = tf.layers.batch_normalization(
-                decode3, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN3')
+                decode3, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN3')
             decode3 = tf.nn.relu(decode3, name='relu3')
             # (None, 10, 10, 128)
 
@@ -221,9 +223,9 @@ class GDM():
             concat4 = tf.concat(
                 [encode3, decode3, action_tile4], self.concat_dim, name='concat4')
             decode4 = lib.nn.deconv2d.Deconv2D(
-                'Deconv4', ngf*4*2+self.num_actions*lookahead, ngf*2, 4, concat4, initializer=self.initializer, stride=2, biases=False, padding_size=1, data_format=self.data_format)
+                'Deconv4', ngf*4*2+self.num_actions*lookahead, ngf*2, 4, concat4, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, biases=False, padding_size=1, data_format=self.data_format)
             decode4 = tf.layers.batch_normalization(
-                decode4, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN4')
+                decode4, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN4')
             decode4 = tf.nn.relu(decode4, name='relu4')
             # (None, 20, 20, 64)
 
@@ -232,9 +234,9 @@ class GDM():
             concat5 = tf.concat(
                 [encode2, decode4, action_tile5], self.concat_dim, name='concat5')
             decode5 = lib.nn.deconv2d.Deconv2D(
-                'Deconv5', ngf*2*2+self.num_actions*lookahead, ngf, 4, concat5, initializer=self.initializer, stride=2, biases=False, padding='VALID', data_format=self.data_format)
+                'Deconv5', ngf*2*2+self.num_actions*lookahead, ngf, 4, concat5, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, biases=False, padding='VALID', data_format=self.data_format)
             decode5 = tf.layers.batch_normalization(
-                decode5, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN5')
+                decode5, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN5')
             decode5 = tf.nn.relu(decode5, name='relu5')
             # (None, 42, 42, 32)
 
@@ -243,9 +245,9 @@ class GDM():
             concat6 = tf.concat(
                 [decode5, action_tile6], self.concat_dim, name='concat6')
             decode6 = lib.nn.deconv2d.Deconv2D(
-                'Deconv6', ngf+self.num_actions*lookahead, lookahead, 4, concat6, initializer=self.initializer, stride=2, biases=False, padding_size=1, data_format=self.data_format)
+                'Deconv6', ngf+self.num_actions*lookahead, lookahead, 4, concat6, initializer=self.initializer, weight_norm_scale=self.gdm_weight_norm_scale, stride=2, biases=False, padding_size=1, data_format=self.data_format)
             decode6 = tf.layers.batch_normalization(
-                decode6, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN6')
+                decode6, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.gdm_weight_norm_scale), training=is_training, name='BN6')
             decode6 = tf.nn.tanh(decode6, name='tanh')
             # (None, 84, 84, lookahead)
 
@@ -254,30 +256,30 @@ class GDM():
     def build_discriminator(self, state, action, is_training=False, update_collection=None, lookahead=1, ngf=64):
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv1', self.history_length + lookahead, ngf, 8, state, initializer=self.initializer, spectral_norm=True, update_collection=update_collection, stride=4, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv1', self.history_length + lookahead, ngf, 8, state, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=True, update_collection=update_collection, stride=4, pytorch_biases=True, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN1')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.disc_weight_norm_scale), training=is_training, name='BN1')
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 20, 20, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv2', ngf, ngf * 2, 4, output, initializer=self.initializer, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv2', ngf, ngf * 2, 4, output, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN2')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.disc_weight_norm_scale), training=is_training, name='BN2')
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 10, 10, 128)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv3', ngf * 2, ngf * 4, 4, output, initializer=self.initializer, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv3', ngf * 2, ngf * 4, 4, output, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=True, update_collection=update_collection, stride=2, pytorch_biases=True, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN3')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.disc_weight_norm_scale), training=is_training, name='BN3')
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 7, 7, 256)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv.4', ngf * 4, 16, 3, output, initializer=self.initializer, spectral_norm=True, update_collection=update_collection, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv.4', ngf * 4, 16, 3, output, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=True, update_collection=update_collection, stride=1, pytorch_biases=True, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, training=is_training, name='BN4')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.disc_weight_norm_scale), training=is_training, name='BN4')
         # (None, 5, 5, 16)
 
         output = tf.layers.flatten(output, name='flatten')
@@ -294,7 +296,7 @@ class GDM():
                            self.concat_dim, name='concat1')
 
         output = lib.nn.linear.Linear(
-            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initializer=self.initializer, spectral_norm=True, pytorch_biases=True, update_collection=update_collection)
+            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 18)
 
@@ -303,7 +305,7 @@ class GDM():
         # (None, 18+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'Dence2', 18 + self.num_actions*lookahead, 1, output, initializer=self.initializer, spectral_norm=True, pytorch_biases=True, update_collection=update_collection)
+            'Dence2', 18 + self.num_actions*lookahead, 1, output, initializer=self.initializer, weight_norm_scale=self.disc_weight_norm_scale, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         # (None, 3*lookahead)
 
         output = tf.reshape(output, [-1])
@@ -328,15 +330,16 @@ class GDM():
         #                 fake_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
         #         )
 
-        with tf.name_scope('disc_fake'):
-            with tf.variable_scope('discriminator'):
-                disc_fake = self.build_discriminator(
-                    fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('disc_real'):
             with tf.variable_scope('discriminator', reuse=True):
                 disc_real = self.build_discriminator(
-                    real_state, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
+                    real_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
+
+        with tf.name_scope('disc_fake'):
+            with tf.variable_scope('discriminator'):
+                disc_fake = self.build_discriminator(
+                    fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('loss'):
             gdm_loss = -tf.reduce_mean(disc_fake)
@@ -376,14 +379,14 @@ class GDM():
             merged_summary = tf.summary.merge(
                 [gan_summary, l1_summary, l2_summary], name='merged_summary')
 
-        # with tf.name_scope('weight_decay'):
-        #     gdm_weight_decay = tf.losses.get_regularization_loss(
-        #         scope='gdm', name='gdm_weight_decay')
-        #     disc_weight_decay = tf.losses.get_regularization_loss(
-        #         scope='discriminator', name='disc_weight_decay')
+        with tf.name_scope('weight_decay'):
+            gdm_weight_decay = tf.losses.get_regularization_loss(
+                scope='gdm', name='gdm_weight_decay')
+            disc_weight_decay = tf.losses.get_regularization_loss(
+                scope='discriminator', name='disc_weight_decay')
 
-        #     gdm_loss += gdm_weight_decay
-        #     disc_loss += disc_weight_decay
+            gdm_loss += gdm_weight_decay
+            disc_loss += disc_weight_decay
 
         gdm_summary = tf.summary.scalar('gdm_loss', gdm_loss)
         disc_summary = tf.summary.scalar('disc_loss', disc_loss)
@@ -395,11 +398,11 @@ class GDM():
 
         # For batch normalization
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='gdm')):
-            gdm_train_op = tf.contrib.opt.AdamWOptimizer(
-                weight_decay=self.gdm_weight_decay, learning_rate=1e-4, beta1=0.5, beta2=0.999, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params, decay_var_list=gdm_params)
+            gdm_train_op = tf.train.AdamOptimizer(
+                learning_rate=1e-4, beta1=0.5, beta2=0.999, name='gdm_adam').minimize(gdm_loss, var_list=gdm_params)
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='opt')):
-            disc_train_op = tf.contrib.opt.MomentumWOptimizer(
-                weight_decay=self.disc_weight_decay, learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params, decay_var_list=disc_params)
+            disc_train_op = tf.train.MomentumOptimizer(
+                learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
 
         return gdm_train_op, disc_train_op, gdm_summary, disc_summary, merged_summary
