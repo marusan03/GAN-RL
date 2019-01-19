@@ -342,8 +342,6 @@ class GDM():
             gdm_loss = -tf.reduce_mean(disc_fake)
             disc_loss = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
 
-            gan_summary = tf.summary.scalar('gan_loss', -gdm_loss)
-
             # Gradient penalty
             # with tf.name_scope('gradient_penalty'):
             #     alpha = tf.random_uniform(
@@ -387,6 +385,8 @@ class GDM():
             gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
             merged_summary = tf.summary.merge(
                 [gan_summary, l1_summary, l2_summary], name='merged_summary')
+
+        gan_summary = tf.summary.scalar('gdm_L1_L2_loss', -gdm_loss)
 
         gdm_params = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='gdm')
