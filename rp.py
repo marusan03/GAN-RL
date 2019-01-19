@@ -61,17 +61,17 @@ class RP():
     def build_rp(self, state, action):
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
+            'RP_Conv.1', self.history_length+self.lookahead, 32, 8, state, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
+            'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
+            'RP_Conv.3', 64, 128, 3, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.nn.relu(output, name='ralu3')
         # (None, 7, 7, 128)
 
@@ -79,7 +79,7 @@ class RP():
         # (None, 6272)
 
         output = lib.nn.linear.Linear(
-            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_norm_scale=self.rp_weight_decay, pytorch_biases=True)
+            'RP_Dence.1', 6272, 512, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, pytorch_biases=True)
         output = tf.nn.relu(output, name='ralu4')
         # (None, 512)
 
