@@ -328,15 +328,15 @@ class GDM():
         #                 fake_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
         #         )
 
-        with tf.name_scope('disc_real'):
-            with tf.variable_scope('discriminator'):
-                disc_real = self.build_discriminator(
-                    real_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
-
         with tf.name_scope('disc_fake'):
-            with tf.variable_scope('discriminator', reuse=True):
+            with tf.variable_scope('discriminator'):
                 disc_fake = self.build_discriminator(
                     fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
+
+        with tf.name_scope('disc_real'):
+            with tf.variable_scope('discriminator', reuse=True):
+                disc_real = self.build_discriminator(
+                    real_state, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
 
         with tf.name_scope('loss'):
             gdm_loss = -tf.reduce_mean(disc_fake)
