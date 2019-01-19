@@ -39,7 +39,7 @@ def Linear(
         biases=True,
         pytorch_biases=False,
         initialization=None,
-        weight_norm_scale=0.,
+        weight_decay_scale=0.,
         spectral_norm=False,
         update_collection=None,
 ):
@@ -124,7 +124,7 @@ def Linear(
 
         # weight normarization
         regularizer = tf.contrib.layers.l2_regularizer(
-            scale=weight_norm_scale)
+            scale=weight_decay_scale)
 
         weight = tf.get_variable(
             'weights', shape=shape, initializer=weight_values, regularizer=regularizer)
