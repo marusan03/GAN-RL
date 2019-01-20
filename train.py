@@ -383,7 +383,7 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
     if config.gif == True:
-        pil_image = [Image.fromarray(unnorm_frame(image).convert(mode='L'))
+        pil_image = [Image.fromarray(unnorm_frame(image)).convert(mode='L')
                      for image in images[0]]
         pil_image[0].save(
             image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
