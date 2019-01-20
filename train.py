@@ -160,6 +160,27 @@ def train(sess, config):
 
         # Train
         if step > config.gan_learn_start and config.gats:
+            if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
+                # obs, act, rew = memory.reward_sample()
+                obs, act, rew = memory.reward_sample2(
+                    config.rp_batch_size, config.lookahead)
+                # reward_obs, reward_act, reward_rew = memory.reward_sample(
+                #     nonzero=True)
+                reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
+                    config.rp_batch_size, config.lookahead)
+                obs_batch = norm_frame(
+                    np.concatenate((obs, reward_obs), axis=0))
+                act_batch = np.concatenate((act, reward_act), axis=0)
+                rew_batch = np.concatenate((rew, reward_rew), axis=0)
+                reward_label = rew_batch + 1
+
+                trajectories = gdm.get_state(
+                    obs_batch, act_batch[:, :-1])
+
+                rp_summary = rp.train(
+                    trajectories, act_batch, reward_label)
+                writer.add_summary(rp_summary, step)
+
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample()
                 state_batch, act_batch, next_state_batch = memory.GAN_sample2(
@@ -184,27 +205,6 @@ def train(sess, config):
                 writer.add_summary(merged_summary, step)
                 gen_step += 1
 
-            if step % rp_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                # obs, act, rew = memory.reward_sample()
-                obs, act, rew = memory.reward_sample2(
-                    config.gan_batch_size, config.lookahead)
-                # reward_obs, reward_act, reward_rew = memory.reward_sample(
-                #     nonzero=True)
-                reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
-                    config.rp_batch_size, config.lookahead)
-                obs_batch = norm_frame(
-                    np.concatenate((obs, reward_obs), axis=0))
-                act_batch = np.concatenate((act, reward_act), axis=0)
-                rew_batch = np.concatenate((rew, reward_rew), axis=0)
-                reward_label = rew_batch + 1
-
-                trajectories = gdm.get_state(
-                    obs_batch, act_batch[:, :-1])
-
-                rp_summary = rp.train(
-                    trajectories, act_batch, reward_label)
-                writer.add_summary(rp_summary, step)
-
         if config.gats == True and step % config.rollout_frequency == 0:
             # rolloutを行い画像を保存
             rollout_image(config, image_dir, gdm,
@@ -216,30 +216,29 @@ def train(sess, config):
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
+                if config.gats == True:
+                    s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
+                    if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
+                        gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
+                        # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
+                        #     config.batch_size)
+                        trajectories = gdm.get_state(
+                            gan_obs_batch, np.expand_dims(act_batch, axis=1))
+                        gan_next_obs_batch = trajectories[:,
+                                                          -1*config.history_length:, ...]
 
-                if config.gats == True and step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
-                    gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
-                    # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
-                    #     config.batch_size)
-                    gan_terminal_batch = np.full([config.batch_size], False)
-                    trajectories = gdm.get_state(
-                        gan_obs_batch, np.expand_dims(act_batch, axis=1))
-                    gan_next_obs_batch = trajectories[:,
-                                                      -1*config.history_length:, ...]
-                    gan_obs_batch, gan_next_obs_batch = unnorm_frame(
-                        gan_obs_batch), unnorm_frame(gan_next_obs_batch)
+                        s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
+                        act_batch = np.concatenate(
+                            [act_batch, gan_act_batch], axis=0)
+                        rew_batch = np.concatenate(
+                            [rew_batch, gan_rew_batch], axis=0)
+                        s_t_plus_1 = np.concatenate(
+                            [s_t_plus_1, gan_next_obs_batch], axis=0)
+                        terminal_batch = np.concatenate(
+                            [terminal_batch, gan_terminal_batch], axis=0)
 
-                    s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
-                    act_batch = np.concatenate(
-                        [act_batch, gan_act_batch], axis=0)
-                    rew_batch = np.concatenate(
-                        [rew_batch, gan_rew_batch], axis=0)
-                    s_t_plus_1 = np.concatenate(
-                        [s_t_plus_1, gan_next_obs_batch], axis=0)
-                    terminal_batch = np.concatenate(
-                        [terminal_batch, gan_terminal_batch], axis=0)
-
-                s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
+                s_t, s_t_plus_1 = norm_frame_Q(unnorm_frame(
+                    s_t)), norm_frame_Q(unnorm_frame(s_t_plus_1))
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
@@ -357,7 +356,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
-    for i in range(config.lookahead + 1):
+    for i in range(config.lookahead):
         predicted_cum_return = config.discount * predicted_cum_return + \
             (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
                 (i+1)*config.num_rewards)], axis=1)-1.)
@@ -386,7 +385,7 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
                      for image in images[0]]
         pil_image[0].save(
-            (image_dir + 'rollout_{}_{}.gif').format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
+            (image_dir + 'rollout_{}_{}.gif').format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=True, duration=100, loop=0)
     images = np.hstack(images[0])
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(
