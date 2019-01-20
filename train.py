@@ -225,7 +225,7 @@ def train(sess, config):
                     trajectories = gdm.get_state(
                         gan_obs_batch, np.expand_dims(act_batch, axis=1))
                     gan_next_obs_batch = trajectories[:,
-                                                      config.lookahead:, ...]
+                                                      -1*config.history_length:, ...]
                     gan_obs_batch, gan_next_obs_batch = unnorm_frame(
                         gan_obs_batch), unnorm_frame(gan_next_obs_batch)
 
@@ -357,7 +357,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
-    for i in range(config.lookahead):
+    for i in range(config.lookahead + 1):
         predicted_cum_return = config.discount * predicted_cum_return + \
             (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
                 (i+1)*config.num_rewards)], axis=1)-1.)
@@ -382,11 +382,11 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
         np.expand_dims(state, axis=0), num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
-    # if config.gif == True:
-    #     pil_image = [Image.fromarray(unnorm_frame(image))
-    #                  for image in images[0]]
-    #     pil_image[0].save(
-    #         image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
+    if config.gif == True:
+        pil_image = [Image.fromarray(unnorm_frame(image).convert(mode='L'))
+                     for image in images[0]]
+        pil_image[0].save(
+            image_dir + 'rollout_{}_{}.gif'.format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=False, duration=100, loop=0)
     images = np.hstack(images[0])
     pil_image = Image.fromarray(unnorm_frame(images))
     pil_image.convert(mode='L').save(

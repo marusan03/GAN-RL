@@ -53,7 +53,7 @@ class GANReplayMemory(object):
         assert self.count > self.history_length
         # sample random indexes
         indexes = np.random.randint(
-            self.history_length, self.count - 1, (self.batch_size))
+            0, self.count - 1, (self.batch_size))
 
         self.prestates = self.states[indexes]
         actions = self.actions[indexes]
