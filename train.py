@@ -217,7 +217,7 @@ def train(sess, config):
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
 
-                if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
+                if config.gats == True and step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                     gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
                     # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
                     #     config.batch_size)
