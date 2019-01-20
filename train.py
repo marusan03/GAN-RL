@@ -205,7 +205,7 @@ def train(sess, config):
                     trajectories, act_batch, reward_label)
                 writer.add_summary(rp_summary, step)
 
-        if step % config.rollout_frequency == 0:
+        if config.gats == True and step % config.rollout_frequency == 0:
             # rolloutを行い画像を保存
             rollout_image(config, image_dir, gdm,
                           norm_frame(history.get()), step, 8)
