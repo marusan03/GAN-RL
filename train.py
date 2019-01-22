@@ -142,6 +142,9 @@ def train(sess, config):
             total_reward, total_loss, total_q_value = 0., 0., 0.
             ep_rewards, actions = [], []
 
+            rp_accuracy = []
+            nonzero_rp_accuracy = []
+
         # ε-greedy
         MCTS_FLAG = False
         epsilon = exploration.value(step)
