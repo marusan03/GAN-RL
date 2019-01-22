@@ -140,7 +140,7 @@ def train(sess, config):
             total_reward, total_loss, total_q_value = 0., 0., 0.
             ep_rewards, actions = [], []
 
-        if step == gan_dqn_learn_start:
+        if step == config.gan_dqn_learn_start:
             rp_accuracy = []
             nonzero_rp_accuracy = []
 
@@ -315,7 +315,7 @@ def train(sess, config):
 
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
-                if step >= gan_dqn_learn_start:
+                if step >= config.gan_dqn_learn_start:
                     rp_accuracy = sum(rp_accuracy) / len(rp_accuracy)
                     nonzero_rp_accuracy = sum(
                         nonzero_rp_accuracy) / len(nonzero_rp_accuracy)
