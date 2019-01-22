@@ -1,4 +1,5 @@
 import os
+import shutil
 import random
 from tqdm import tqdm
 from PIL import Image
@@ -42,6 +43,9 @@ def train(sess, config):
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(model_dir, 'checkpoints/')
     image_dir = os.path.join(model_dir, 'rollout/')
+    if os.path.isdir(model_dir):
+        shutil.rmtree(model_dir)
+
     print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
 
     with tf.variable_scope('step'):
@@ -51,7 +55,7 @@ def train(sess, config):
 
     with tf.variable_scope('summary'):
         scalar_summary_tags = ['average.reward', 'average.loss', 'average.q value',
-                               'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate']
+                               'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate', 'rp.rp_accuracy', 'rp.nonzero_rp_accuracy']
 
         summary_placeholders = {}
         summary_ops = {}
@@ -118,6 +122,9 @@ def train(sess, config):
     max_avg_ep_reward = -100
     ep_rewards, actions = [], []
 
+    rp_accuracy = []
+    nonzero_rp_accuracy = []
+
     screen, reward, action, terminal = env.new_random_game()
 
     # init state
@@ -141,7 +148,7 @@ def train(sess, config):
         else:
             current_state = np.expand_dims(history.get(), axis=0)
             if config.gats and (step >= config.gan_dqn_learn_start):
-                action = MCTS_planning(
+                action, predicted_reward = MCTS_planning(
                     gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
             else:
                 action = agent.get_action(
@@ -157,6 +164,10 @@ def train(sess, config):
         reward = max(config.min_reward, min(config.max_reward, reward))
         history.add(screen)
         memory.add(screen, reward, action, terminal)
+
+        rp_accuracy.append(int(predicted_reward == reward))
+        if reward != 0:
+            nonzero_rp_accuracy.append(int(predicted_reward == reward))
 
         # Train
         if step > config.gan_learn_start and config.gats:
@@ -296,7 +307,7 @@ def train(sess, config):
                 if max_avg_ep_reward * 0.9 <= avg_ep_reward:
                     step_assign_op.eval({step_input: step + 1})
                     save_model(sess, saver, checkpoint_dir,
-                               step + 1)  # 修正必要 モデルの保存の仕方
+                               step + 1)
 
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
@@ -313,7 +324,10 @@ def train(sess, config):
                             'episode.avg reward': avg_ep_reward,
                             'episode.num of game': num_game,
                             'episode.rewards': ep_rewards,
-                            'episode.actions': actions},
+                            'episode.actions': actions,
+                            'rp.rp_accuracy': sum(rp_accuracy) / len(rp_accuracy),
+                            'rp.nonzero_rp_accuracy': sum(nonzero_rp_accuracy) / len(nonzero_rp_accuracy)
+                        },
                         step)
 
                 num_game = 0
@@ -324,6 +338,9 @@ def train(sess, config):
                 ep_reward = 0.
                 ep_rewards = []
                 actions = []
+
+                rp_accuracy = []
+                nonzero_rp_accuracy = []
 
 
 def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, step):
@@ -341,26 +358,19 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     epsiron = exploration.value(step)
 
     state = np.repeat(state, leaves_size, axis=0)
-    print('state shape', state.shape)
     action = tree_base
-    print('action shape', action.shape, "\n", action)
     trajectories = gdm.get_state(state, action)
     leaves_q_value = agent.get_q_value(
         norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
-    print('leaves q value', leaves_q_value)
     leaves_Q_max = config.discount ** (config.lookahead) * \
         np.max(leaves_q_value, axis=1)
-    print('leaves q max', leaves_Q_max)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
-    print('leaes act max', leaves_act_max)
     if sample2 < epsiron:
         leaves_act_max = np.random.randint(
             0, config.num_actions, leaves_act_max.shape)
     reward_actions = np.concatenate(
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
-    print('reward_actions', reward_actions)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
-    print('predicted cum rew', reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
     for i in range(config.lookahead):
@@ -368,7 +378,6 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
             (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
                 (i+1)*config.num_rewards)], axis=1)-1.)
     GATS_action = leaves_Q_max + predicted_cum_return
-    print('gats action', GATS_action, GATS_action.shape)
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
     # DQNがGANの不完全さを吸収するために必要?
@@ -379,7 +388,9 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
-    return return_action
+    predicted_reward = np.argmax(
+        predicted_cum_rew[:, 0:(config.num_rewards)], axis=1)-1
+    return return_action, predicted_reward
 
 
 def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):

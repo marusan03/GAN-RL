@@ -140,8 +140,8 @@ class Agent():
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        # dence_initializer = tf.random_normal_initializer(stddev=0.02)
-        dence_initializer = None
+        dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        # dence_initializer = None
 
         output = lib.nn.linear.Linear(
             'Dence1', 3136, 512, output, initializer=dence_initializer)

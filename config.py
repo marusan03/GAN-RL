@@ -50,6 +50,7 @@ class GDMConfig(object):
     gan_memory_size = 10000
     gan_learn_start = 10000
     gan_dqn_learn_start = 200000
+    gan_warmup = 5000
     gan_batch_size = 128
     lookahead = 1
     lamda = 10.
@@ -61,7 +62,6 @@ class GDMConfig(object):
     disc_weight_decay = 0.1
     gats = True
     rollout_frequency = 50000
-    gan_warmup = 5000
     gif = True
 
 
