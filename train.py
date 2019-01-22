@@ -45,6 +45,7 @@ def train(sess, config):
     image_dir = os.path.join(model_dir, 'rollout/')
     if os.path.isdir(model_dir):
         shutil.rmtree(model_dir)
+        print(' [*] derete model_dir: ' + model_dir)
 
     print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
 
@@ -142,6 +143,7 @@ def train(sess, config):
             ep_rewards, actions = [], []
 
         # ε-greedy
+        MCTS_FLAG = False
         epsilon = exploration.value(step)
         if random.random() < epsilon:
             action = random.randrange(config.num_actions)
@@ -150,6 +152,7 @@ def train(sess, config):
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action, predicted_reward = MCTS_planning(
                     gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
+                MCTS_FLAG = True
             else:
                 action = agent.get_action(
                     norm_frame_Q(current_state))
@@ -165,9 +168,10 @@ def train(sess, config):
         history.add(screen)
         memory.add(screen, reward, action, terminal)
 
-        rp_accuracy.append(int(predicted_reward == reward))
-        if reward != 0:
-            nonzero_rp_accuracy.append(int(predicted_reward == reward))
+        if MCTS_FLAG == True:
+            rp_accuracy.append(int(predicted_reward == reward))
+            if reward != 0:
+                nonzero_rp_accuracy.append(int(predicted_reward == reward))
 
         # Train
         if step > config.gan_learn_start and config.gats:
