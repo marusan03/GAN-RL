@@ -341,19 +341,26 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     epsiron = exploration.value(step)
 
     state = np.repeat(state, leaves_size, axis=0)
+    print('state shape', state.shape)
     action = tree_base
+    print('action shape', action.shape, "\n", action)
     trajectories = gdm.get_state(state, action)
     leaves_q_value = agent.get_q_value(
         norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
+    print('leaves q value', leaves_q_value)
     leaves_Q_max = config.discount ** (config.lookahead) * \
         np.max(leaves_q_value, axis=1)
+    print('leaves q max', leaves_Q_max)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
+    print('leaes act max', leaves_act_max)
     if sample2 < epsiron:
         leaves_act_max = np.random.randint(
             0, config.num_actions, leaves_act_max.shape)
     reward_actions = np.concatenate(
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
+    print('reward_actions', reward_actions)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
+    print('predicted cum rew', reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
     for i in range(config.lookahead):
@@ -361,6 +368,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
             (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
                 (i+1)*config.num_rewards)], axis=1)-1.)
     GATS_action = leaves_Q_max + predicted_cum_return
+    print('gats action', GATS_action, GATS_action.shape)
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
     # DQNがGANの不完全さを吸収するために必要?

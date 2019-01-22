@@ -51,9 +51,7 @@ class GDMConfig(object):
     gan_learn_start = 10000
     gan_dqn_learn_start = 200000
     gan_batch_size = 128
-    rp_batch_size = 128
     lookahead = 1
-    num_rewards = 3
     lamda = 10.
     lambda_l1 = 20.
     lambda_l2 = 80.
@@ -61,7 +59,6 @@ class GDMConfig(object):
     disc_ngf = 24
     gdm_weight_decay = 1e-3
     disc_weight_decay = 0.1
-    rp_weight_decay = 1e-4
     gats = True
     rollout_frequency = 50000
     gan_warmup = 5000
@@ -70,6 +67,9 @@ class GDMConfig(object):
 
 class RPConfig(object):
     rp_learn_start = 10000
+    rp_batch_size = 128
+    num_rewards = 3
+    rp_weight_decay = 1e-4
 
 
 class DQNConfig(AgentConfig, EnvironmentConfig):
