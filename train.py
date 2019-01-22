@@ -225,7 +225,7 @@ def train(sess, config):
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
             # rolloutを行い画像を保存
-            if config.gats == True and step % config.rollout_frequency == 0:
+            if config.gats == True:
                 rollout_image(config, image_dir, gdm, memory, step, 8)
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
@@ -316,9 +316,8 @@ def train(sess, config):
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
                 if step >= config.gan_dqn_learn_start:
-                    rp_accuracy = sum(rp_accuracy) / len(rp_accuracy)
-                    nonzero_rp_accuracy = sum(
-                        nonzero_rp_accuracy) / len(nonzero_rp_accuracy)
+                    rp_accuracy = np.mean(rp_accuracy)
+                    nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
                 else:
                     rp_accuracy = 0
                     nonzero_rp_accuracy = 0
