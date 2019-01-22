@@ -80,13 +80,13 @@ class GDM():
             self.pre_state: state, self.action: action, self.is_training: False})
         return predicted_state
 
-    def rollout(self, state, action, num_rollout):
+    def rollout(self, states, actions, num_rollout):
         for i in range(num_rollout):
-            action = [[action[i]]]
+            action = [[actions[i]]]
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
-                self.pre_state: state[:, -self.history_length:, ...], self.action: action, self.is_training: False})
-            state = np.concatenate([state, predicted_state], axis=1)
-        return state
+                self.pre_state: states[:, -self.history_length:, ...], self.action: action, self.is_training: False})
+            states = np.concatenate([states, predicted_state], axis=1)
+        return states
 
     def train(self, pre_state, action, post_state, warmup, iteration=1):
         # train discriminator

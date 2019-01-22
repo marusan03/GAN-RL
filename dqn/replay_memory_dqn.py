@@ -154,7 +154,7 @@ class ReplayMemory:
             # otherwise use this index
             break
         state = self.getState(index - 1, num_rollout)
-        action = self.actions[index:index+num_rollout+1]
+        action = self.actions[index:index+num_rollout]
         return state, action
 
     def sample(self):
