@@ -47,8 +47,6 @@ def train(sess, config):
         shutil.rmtree(model_dir)
         print(' [*] derete model_dir: ' + model_dir)
 
-    print(' [*] checkpont_dir = {}'.format(checkpoint_dir))
-
     with tf.variable_scope('step'):
         step_op = tf.Variable(0, trainable=False, name='step')
         step_input = tf.placeholder('int32', None, name='step_input')
@@ -223,13 +221,11 @@ def train(sess, config):
                 writer.add_summary(merged_summary, step)
                 gen_step += 1
 
-        if config.gats == True and step % config.rollout_frequency == 0:
-            # rolloutを行い画像を保存
-            rollout_image(config, image_dir, gdm,
-                          norm_frame(history.get()), step, 8)
-
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
+            # rolloutを行い画像を保存
+            if config.gats == True and step % config.rollout_frequency == 0:
+                rollout_image(config, image_dir, gdm, memory, step, 8)
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
@@ -400,11 +396,13 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     return return_action, predicted_reward
 
 
-def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
+def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
     if not os.path.isdir(image_dir):
         os.makedirs(image_dir)
-    images, actions = gdm.rollout(
-        np.expand_dims(state, axis=0), num_rollout)
+    states, actions = memory.rollout_state_action(num_rollout)
+    states = norm_frame(states)
+    images = gdm.rollout(np.expand_dims(
+        states[:4], axis=0), actions, num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
     if config.gif == True:
@@ -412,8 +410,10 @@ def rollout_image(config, image_dir, gdm, state, step, num_rollout=4):
                      for image in images[0]]
         pil_image[0].save(
             (image_dir + 'rollout_{}_{}.gif').format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=True, duration=100, loop=0)
+    states = np.hstack(states)
     images = np.hstack(images[0])
-    pil_image = Image.fromarray(unnorm_frame(images))
+    states = np.vstack([states, images])
+    pil_image = Image.fromarray(unnorm_frame(states))
     pil_image.convert(mode='L').save(
         image_dir + 'rollout_{}_{}.jpg'.format(step, action_label))
     print('\n [*] created Image!')

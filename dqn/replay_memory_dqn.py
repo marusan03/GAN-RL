@@ -138,6 +138,25 @@ class ReplayMemory:
                        self.count for i in reversed(range(self.history_length + lookahead))]
             return self.screens[indexes, ...]
 
+    def rollout_state_action(self, num_rollout=4):
+        index = 0
+        while True:
+            # sample one index (ignore states wraping over
+            index = random.randint(self.history_length,
+                                   self.count - num_rollout - 1)
+            # if wraps over current pointer, then get new one
+            if index + (num_rollout - 1) >= self.current and index - self.history_length < self.current:
+                continue
+            # if wraps over episode end, then get new one
+            # NB! poststate (last screen) can be terminal state!
+            if self.terminals[(index - self.history_length):index + (num_rollout - 1)].any():
+                continue
+            # otherwise use this index
+            break
+        state = self.getState(index - 1, num_rollout)
+        action = self.actions[index:index+num_rollout+1]
+        return state, action
+
     def sample(self):
         # memory must include poststate, prestate and history
         assert self.count > self.history_length
