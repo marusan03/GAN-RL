@@ -224,9 +224,6 @@ def train(sess, config):
 
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
-            # rolloutを行い画像を保存
-            if config.gats == True:
-                rollout_image(config, image_dir, gdm, memory, step, 8)
             if step % config.train_frequency == 0:
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
@@ -293,6 +290,10 @@ def train(sess, config):
         # calcurate infometion
         if step >= config.learn_start:
             if step % config._test_step == config._test_step - 1:
+                # rolloutを行い画像を保存
+                if config.gats == True:
+                    rollout_image(config, image_dir, gdm, memory, step, 16)
+
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
                 avg_q = total_q_value / update_count
