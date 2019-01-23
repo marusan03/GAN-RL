@@ -287,6 +287,10 @@ def train(sess, config):
                 rp_train_frequency = 24
                 gdm_train_frequency = 24
 
+        # rolloutを行い画像を保存
+        if config.gats == True and step % config._test_step == config._test_step - 1:
+            rollout_image(config, image_dir, gdm, memory, step, 16)
+
         # calcurate infometion
         if step >= config.learn_start:
             if step % config._test_step == config._test_step - 1:
