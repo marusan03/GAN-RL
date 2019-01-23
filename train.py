@@ -45,7 +45,7 @@ def train(sess, config):
     image_dir = os.path.join(model_dir, 'rollout/')
     if os.path.isdir(model_dir):
         shutil.rmtree(model_dir)
-        print(' [*] derete model_dir: ' + model_dir)
+        print(' [*] Removed model dir: ' + model_dir)
 
     with tf.variable_scope('step'):
         step_op = tf.Variable(0, trainable=False, name='step')
