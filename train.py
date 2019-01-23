@@ -294,9 +294,6 @@ def train(sess, config):
         # calcurate infometion
         if step >= config.learn_start:
             if step % config._test_step == config._test_step - 1:
-                # rolloutを行い画像を保存
-                if config.gats == True:
-                    rollout_image(config, image_dir, gdm, memory, step, 16)
 
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
