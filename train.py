@@ -54,7 +54,7 @@ def train(sess, config):
 
     with tf.variable_scope('summary'):
         scalar_summary_tags = ['average.reward', 'average.loss', 'average.q value',
-                               'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate', 'rp.rp_accuracy', 'rp.nonzero_rp_accuracy']
+                               'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate', 'rp.rp_accuracy', 'rp.nonzero_rp_accuracy', 'rp.nonzero_count']
 
         summary_placeholders = {}
         summary_ops = {}
@@ -121,6 +121,7 @@ def train(sess, config):
     max_avg_ep_reward = -100
     ep_rewards, actions = [], []
 
+    nonzero_count = 0
     rp_accuracy = []
     nonzero_rp_accuracy = []
 
@@ -138,6 +139,7 @@ def train(sess, config):
         if step == config.learn_start:
             num_game, update_count, ep_reward = 0, 0, 0.
             total_reward, total_loss, total_q_value = 0., 0., 0.
+            nonzero_count = 0
             ep_rewards, actions = [], []
 
         if step == config.gan_dqn_learn_start:
@@ -173,6 +175,7 @@ def train(sess, config):
         if MCTS_FLAG == True:
             rp_accuracy.append(int(predicted_reward == reward))
             if reward != 0:
+                nonzero_count += 1
                 nonzero_rp_accuracy.append(int(predicted_reward == reward))
 
         # Train
@@ -339,7 +342,8 @@ def train(sess, config):
                             'episode.rewards': ep_rewards,
                             'episode.actions': actions,
                             'rp.rp_accuracy': rp_accuracy,
-                            'rp.nonzero_rp_accuracy': nonzero_rp_accuracy
+                            'rp.nonzero_rp_accuracy': nonzero_rp_accuracy,
+                            'rp.nonzero_count': nonzero_count
                         },
                         step)
 
@@ -354,6 +358,7 @@ def train(sess, config):
 
                 rp_accuracy = []
                 nonzero_rp_accuracy = []
+                nonzero_count = 0
 
 
 def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, step):
