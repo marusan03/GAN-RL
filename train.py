@@ -289,7 +289,7 @@ def train(sess, config):
 
         # rolloutを行い画像を保存
         if config.gats == True and step % config._test_step == config._test_step - 1:
-            rollout_image(config, image_dir, gdm, memory, step, 16)
+            rollout_image(config, image_dir, gdm, memory, step+1, 16)
 
         # calcurate infometion
         if step >= config.learn_start:
@@ -416,12 +416,13 @@ def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
     if config.gif == True:
+        gif_images = np.hstack([states, images])
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
-                     for image in images[0]]
+                     for image in gif_images]
         pil_image[0].save(
             (image_dir + 'rollout_{}_{}.gif').format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=True, duration=100, loop=0)
     states = np.hstack(states)
-    images = np.hstack(images[0])
+    images = np.hstack(images)
     states = np.vstack([states, images])
     pil_image = Image.fromarray(unnorm_frame(states))
     pil_image.convert(mode='L').save(

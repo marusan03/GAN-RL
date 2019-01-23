@@ -86,7 +86,7 @@ class GDM():
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
                 self.pre_state: states[:, -self.history_length:, ...], self.action: action, self.is_training: False})
             states = np.concatenate([states, predicted_state], axis=1)
-        return states
+        return np.squeeze(states)
 
     def train(self, pre_state, action, post_state, warmup, iteration=1):
         # train discriminator
