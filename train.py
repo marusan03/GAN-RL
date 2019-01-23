@@ -403,7 +403,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     gan_memory.add_batch(obs, act_batch, rew_batch)
     predicted_reward = np.argmax(
         predicted_cum_rew[:, 0:(config.num_rewards)], axis=1)-1
-    return return_action, predicted_reward
+    return return_action, np.squeeze(predicted_reward)
 
 
 def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
