@@ -34,7 +34,7 @@ class GDM():
 
         self.initializer = tf.truncated_normal_initializer(0.0, 0.02)
         self.beta_initializer = tf.zeros_initializer()
-        self.gamma_initializer = tf.random_normal_initializer(1.0, 0.02)
+        self.gamma_initializer = tf.truncated_normal_initializer(1.0, 0.02)
         # self.initializer = None
         self.gamma_initializer = None
 
