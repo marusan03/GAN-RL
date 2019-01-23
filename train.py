@@ -39,13 +39,13 @@ def train(sess, config):
 
     env = GymEnvironment(config)
 
-    model_dir = './log/{}_lookahead_{}_gats_{}/'.format(
+    log_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
-    checkpoint_dir = os.path.join(model_dir, 'checkpoints/')
-    image_dir = os.path.join(model_dir, 'rollout/')
-    if os.path.isdir(model_dir):
-        shutil.rmtree(model_dir)
-        print(' [*] Removed model dir: ' + model_dir)
+    checkpoint_dir = os.path.join(log_dir, 'checkpoints/')
+    image_dir = os.path.join(log_dir, 'rollout/')
+    if os.path.isdir(log_dir):
+        shutil.rmtree(log_dir)
+        print(' [*] Removed model dir: ' + log_dir)
 
     with tf.variable_scope('step'):
         step_op = tf.Variable(0, trainable=False, name='step')
@@ -103,7 +103,7 @@ def train(sess, config):
 
     agent = Agent(sess, config, num_actions=config.num_actions)
     # memory = ReplayMemory(config)
-    memory = ReplayMemory(config, model_dir)
+    memory = ReplayMemory(config, log_dir)
     history = History(config)
 
     tf.global_variables_initializer().run()
@@ -114,7 +114,7 @@ def train(sess, config):
 
     agent.updated_target_q_network()
 
-    writer = tf.summary.FileWriter(model_dir, sess.graph)
+    writer = tf.summary.FileWriter(log_dir, sess.graph)
 
     num_game, update_count, ep_reward = 0, 0, 0.
     total_reward, total_loss, total_q_value = 0., 0., 0.
