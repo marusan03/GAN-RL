@@ -24,6 +24,7 @@ class Agent():
         self.learning_rate_decay_step = self.config.learning_rate_decay_step
         self.learning_rate_decay = self.config.learning_rate_decay
         self.data_format = self.config.cnn_format
+        self.double_q = self.config.double_q
 
         self.s_t = tf.placeholder(tf.float32, shape=(
             None, self.history_length, self.screen_width, self.screen_height))
@@ -40,13 +41,18 @@ class Agent():
             self.q_value, self.q_action = self.build_model(self.s_t)
         with tf.variable_scope('target_network'):
             self.target_q_value, _ = self.build_model(self.s_t_plas_1)
+            if self.double_q == True:
+                self.target_q_index = tf.placeholder(
+                    'int32', [None, None], 'outputs_idx')
+                self.target_q_with_index = tf.gather_nd(
+                    self.target_q_value, self.target_q_index)
         with tf.name_scope('update_target_q_network'):
             self.update_target_q_network_op = self.copy_weight()
         with tf.name_scope('dqn_op'):
             self.dqn_op, self.loss, self.dqn_summary = self.build_training_op()
 
     def get_action(self, state):
-        action = self.sess.run(self.q_action, feed_dict={self.s_t: state})[0]
+        action = self.sess.run(self.q_action, feed_dict={self.s_t: state})
         return action
 
     def get_q_value(self, state):
@@ -67,8 +73,16 @@ class Agent():
         self.sess.run(self.update_target_q_network_op)
 
     def train(self, state, action, reward, next_state, terminal, step):
-        max_q_t_plus_1 = np.max(
-            self.target_q_value.eval({self.s_t_plas_1: next_state}), axis=1)
+        if self.double_q == True:
+            predicted_action = self.get_action(next_state)
+            max_q_t_plus_1 = self.target_q_with_index.eval({
+                self.s_t: next_state,
+                self.target_q_index: [[idx, pred_a]
+                                      for idx, pred_a in enumerate(predicted_action)]
+            })
+        else:
+            max_q_t_plus_1 = np.max(
+                self.target_q_value.eval({self.s_t_plas_1: next_state}), axis=1)
         terminal = np.array(terminal) + 0.
 
         target_q_t = (1. - terminal) * self.discount * max_q_t_plus_1 + reward
