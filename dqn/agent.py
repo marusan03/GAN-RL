@@ -76,7 +76,7 @@ class Agent():
         if self.double_q == True:
             predicted_action = self.get_action(next_state)
             max_q_t_plus_1 = self.target_q_with_index.eval({
-                self.s_t: next_state,
+                self.self.s_t_plas_1: next_state,
                 self.target_q_index: [[idx, pred_a]
                                       for idx, pred_a in enumerate(predicted_action)]
             })
