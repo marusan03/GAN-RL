@@ -14,7 +14,7 @@ def Conv2D(
     filter_size,
     inputs,
     initializer=None,
-    he_init=True,
+    he_init=False,
     stride=1,
     weight_decay_scale=0.,
     spectral_norm=None,
@@ -44,6 +44,11 @@ def Conv2D(
         if initializer == None:
             if he_init:
                 filters_stdev = np.sqrt(4./(fan_in+fan_out))
+            elif pytorch:
+                shape = (filter_size, filter_size, input_dim, output_dim)
+                k = 1.0 / input_dim * filter_size * filter_size
+                filter_values = np.random.uniform(-np.sqrt(k), np.sqrt(k),
+                                                  shape).astype('float32')
             else:  # Normalized init (Glorot & Bengio)
                 filters_stdev = np.sqrt(2./(fan_in+fan_out))
 
@@ -51,11 +56,6 @@ def Conv2D(
                 filters_stdev,
                 (filter_size, filter_size, input_dim, output_dim)
             )
-        elif pytorch == True:
-            shape = (filter_size, filter_size, input_dim, output_dim)
-            k = 1.0 / input_dim * filter_size * filter_size
-            filter_values = np.random.uniform(-np.sqrt(k), np.sqrt(k),
-                                              shape).astype('float32')
         else:
             filter_values = initializer
             shape = (filter_size, filter_size, input_dim, output_dim)
