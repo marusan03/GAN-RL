@@ -19,6 +19,7 @@ def Conv2D(
     weight_decay_scale=0.,
     spectral_norm=None,
     update_collection=None,
+    pytorch=False,
     biases=True,
     pytorch_biases=False,
     padding_size=0,
@@ -50,6 +51,11 @@ def Conv2D(
                 filters_stdev,
                 (filter_size, filter_size, input_dim, output_dim)
             )
+        elif pytorch == True:
+            shape = (filter_size, filter_size, input_dim, output_dim)
+            k = 1.0 / input_dim * filter_size * filter_size
+            filter_values = np.random.uniform(-np.sqrt(k), np.sqrt(k),
+                                              shape).astype('float32')
         else:
             filter_values = initializer
             shape = (filter_size, filter_size, input_dim, output_dim)
