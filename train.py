@@ -81,7 +81,7 @@ def train(sess, config):
 
     if config.gats == True:
         lookahead = config.lookahead
-        rp_train_frequency = 4
+        # rp_train_frequency = 4
         gdm_train_frequency = 4
         gan_memory = GANReplayMemory(config)
         gdm = GDM(sess, config, num_actions=config.num_actions)
@@ -147,7 +147,7 @@ def train(sess, config):
             nonzero_rp_accuracy = []
 
         # ε-greedy
-        MCTS_FLAG = False
+        # MCTS_FLAG = False
         epsilon = exploration.value(step)
         if random.random() < epsilon:
             action = random.randrange(config.num_actions)
@@ -156,7 +156,7 @@ def train(sess, config):
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action= MCTS_planning(
                     gdm, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
-                MCTS_FLAG = True
+                # MCTS_FLAG = True
             else:
                 action = agent.get_action(
                     norm_frame_Q(current_state))
@@ -281,13 +281,13 @@ def train(sess, config):
         # change train freqancy
         if config.gats:
             if step == 10000 - 1:
-                rp_train_frequency = 8
+                # rp_train_frequency = 8
                 gdm_train_frequency = 8
             if step == 50000 - 1:
-                rp_train_frequency = 16
+                # rp_train_frequency = 16
                 gdm_train_frequency = 16
             if step == 100000 - 1:
-                rp_train_frequency = 24
+                # rp_train_frequency = 24
                 gdm_train_frequency = 24
 
         # rolloutを行い画像を保存
@@ -321,8 +321,11 @@ def train(sess, config):
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
                 if step >= config.gan_dqn_learn_start:
-                    rp_accuracy = np.mean(rp_accuracy)
-                    nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
+                    try:
+                        rp_accuracy = np.mean(rp_accuracy)
+                        nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
+                    except:
+                        rp_accuracy, nonzero_rp_accuracy = 0, 0
                 else:
                     rp_accuracy = 0
                     nonzero_rp_accuracy = 0
@@ -371,7 +374,7 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
 
 def MCTS_planning(gdm, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
 
-    sample1 = random.random()
+    # sample1 = random.random()
     sample2 = random.random()
     epsiron = exploration.value(step)
 
@@ -388,8 +391,8 @@ def MCTS_planning(gdm, agent, state, leaves_size, tree_base, config, exploration
     if sample2 < epsiron:
         leaves_act_max = np.random.randint(
             0, config.num_actions, leaves_act_max.shape)
-    reward_actions = np.concatenate(
-        (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
+    # reward_actions = np.concatenate(
+    #     (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
     # predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     # predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
@@ -397,20 +400,21 @@ def MCTS_planning(gdm, agent, state, leaves_size, tree_base, config, exploration
         # predicted_cum_return = config.discount * predicted_cum_return + \
         #    (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
         #        (i+1)*config.num_rewards)], axis=1)-1.) 
-    root_q_value = np.array([root_q_value[i, j] for i, j in enumerate(tree_base[:,0])])
+    root_q_value = config.discount * \
+        np.array([root_q_value[i, j] for i, j in enumerate(tree_base[:, 0])])
     GATS_action = leaves_Q_max + root_q_value
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
     # DQNがGANの不完全さを吸収するために必要?
-#     if sample1 < epsiron:
-#         max_idx = random.randrange(leaves_size)
-#     obs = trajectories[max_idx, -(config.history_length):, ...]
-#     act_batch = np.squeeze(leaves_act_max[max_idx])
-#     rew_batch = np.argmax(
-#         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
-#     gan_memory.add_batch(obs, act_batch, rew_batch)
-#     predicted_reward = np.argmax(
-#         predicted_cum_rew[max_idx, 0:(config.num_rewards)], axis=0) - 1
+    # if sample1 < epsiron:
+    #     max_idx = random.randrange(leaves_size)
+    # obs = trajectories[max_idx, -(config.history_length):, ...]
+    # act_batch = np.squeeze(leaves_act_max[max_idx])
+    # rew_batch = np.argmax(
+    #     predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
+    # gan_memory.add_batch(obs, act_batch, rew_batch)
+    # predicted_reward = np.argmax(
+    #     predicted_cum_rew[max_idx, 0:(config.num_rewards)], axis=0) - 1
     return return_action
 
 
