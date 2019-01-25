@@ -34,8 +34,8 @@ def Conv2D(
             return tf.random_uniform(
                 shape=shape,
                 dtype=tf.float32,
-                minval=-stdev * tf.sqrt(3.),
-                maxval=stdev * tf.sqrt(3.)
+                minval=-stdev,
+                maxval=stdev
             )
 
         fan_in = input_dim * filter_size**2
@@ -43,19 +43,18 @@ def Conv2D(
 
         if initializer == None:
             if he_init:
-                filters_stdev = np.sqrt(4./(fan_in+fan_out))
+                filters_stdev = np.sqrt(12./(fan_in+fan_out))
             elif pytorch:
-                shape = (filter_size, filter_size, input_dim, output_dim)
-                k = 1.0 / input_dim * filter_size * filter_size
-                filter_values = np.random.uniform(-np.sqrt(k), np.sqrt(k),
-                                                  shape).astype('float32')
+                filters_stdev = np.sqrt(
+                    1.0 / input_dim * filter_size * filter_size)
             else:  # Normalized init (Glorot & Bengio)
-                filters_stdev = np.sqrt(2./(fan_in+fan_out))
+                filters_stdev = np.sqrt(6./(fan_in+fan_out))
 
             filter_values = uniform(
                 filters_stdev,
                 (filter_size, filter_size, input_dim, output_dim)
             )
+
         else:
             filter_values = initializer
             shape = (filter_size, filter_size, input_dim, output_dim)
