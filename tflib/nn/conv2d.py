@@ -45,8 +45,7 @@ def Conv2D(
             if he_init:
                 filters_stdev = np.sqrt(12./(fan_in+fan_out))
             elif pytorch:
-                filters_stdev = np.sqrt(
-                    1.0 / input_dim * filter_size * filter_size)
+                filters_stdev = np.sqrt(1.0 / fan_in)
             else:  # Normalized init (Glorot & Bengio)
                 filters_stdev = np.sqrt(6./(fan_in+fan_out))
 
