@@ -321,8 +321,11 @@ def train(sess, config):
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
                 if step >= config.gan_dqn_learn_start:
-                    rp_accuracy = np.mean(rp_accuracy)
-                    nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
+                    try:
+                        rp_accuracy = np.mean(rp_accuracy)
+                        nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
+                    except:
+                        rp_accuracy, nonzero_rp_accuracy = 0, 0
                 else:
                     rp_accuracy = 0
                     nonzero_rp_accuracy = 0
