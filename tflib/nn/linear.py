@@ -132,8 +132,11 @@ def Linear(
             shape = (input_dim, output_dim)
 
         # weight normarization
-        regularizer = tf.contrib.layers.l2_regularizer(
-            scale=weight_decay_scale)
+        if weight_decay_scale != 0.:
+            regularizer = tf.contrib.layers.l2_regularizer(
+                scale=weight_decay_scale)
+        else:
+            regularizer = None
 
         weight = tf.get_variable(
             'weights', shape=shape, initializer=weight_values, regularizer=regularizer)
