@@ -13,7 +13,7 @@ def Deconv2D(
     initializer=None,
     he_init=True,
     stride=2,
-    weight_decay_scale=0.,
+    weight_decay_scale=None,
     biases=True,
     padding_size=0,
     padding='SAME',
@@ -54,7 +54,7 @@ def Deconv2D(
             shape = (filter_size, filter_size, output_dim, input_dim)
 
         # weight normarization
-        if weight_decay_scale != 0.:
+        if weight_decay_scale != None:
             regularizer = tf.contrib.layers.l2_regularizer(
                 scale=weight_decay_scale)
         else:

@@ -16,7 +16,7 @@ def Conv2D(
     initializer=None,
     he_init=True,
     stride=1,
-    weight_decay_scale=0.,
+    weight_decay_scale=None,
     spectral_norm=None,
     update_collection=None,
     biases=True,
@@ -55,7 +55,7 @@ def Conv2D(
             shape = (filter_size, filter_size, input_dim, output_dim)
 
         # weight normarization
-        if weight_decay_scale != 0.:
+        if weight_decay_scale != None:
             regularizer = tf.contrib.layers.l2_regularizer(
                 scale=weight_decay_scale)
         else:
