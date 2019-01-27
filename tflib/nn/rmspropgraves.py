@@ -29,7 +29,6 @@ class RmsPropGraves(optimizer.Optimizer):
             self._momentum, name="momentum_t")
         self._epsilon_t = ops.convert_to_tensor(
             self._epsilon, name="epsilon_t")
-        
 
     def _create_slots(self, var_list):
         # Create slots for the first and second moments.
@@ -49,13 +48,14 @@ class RmsPropGraves(optimizer.Optimizer):
         m = self.get_slot(var, "m")
         m_t = m.assign(decay_t * m + (1 - decay_t)*grad)
         v = self.get_slot(var, "v")
-        v_t = v.assign(decay_t * v + (1 - decay_t) * grad ** 2)
+        v_t = v.assign(decay_t * v + (1 - decay_t)*grad**2)
         delta = self.get_slot(var, "delta")
 
         # Update 'ref' by subtracting 'value
         var_update = state_ops.assign_sub(
-            var, lr_t / tf.sqrt(v_t - m_t**2 + epsilon_t)*grad - momentum_t*delta)
-        delta_t = delta.assign(momentum_t*delta - lr_t / tf.sqrt(v_t - m_t**2 + epsilon_t)*grad)
+            var, lr_t * (1.0 / tf.sqrt(v_t - m_t**2 + epsilon_t)) * grad - momentum_t*delta)
+        delta_t = delta.assign(momentum_t*delta - lr_t *
+                               (1.0 / tf.sqrt(v_t - m_t**2 + epsilon_t)) * grad)
         # Create an op that groups multiple operations.
         # When this op finishes, all ops in input have finished
         return control_flow_ops.group(*[var_update, m_t, v_t, delta_t])
