@@ -9,6 +9,7 @@ import tflib.nn.conv2d
 import tflib.nn.linear
 from tflib.nn.rmspropgraves import RmsPropGraves
 
+
 class Agent():
 
     def __init__(self, sess, config, num_actions=18, action_interval=4):
@@ -133,7 +134,7 @@ class Agent():
 
     def build_model(self, state):
 
-        initializer = tf.truncated_normal_initializer(0.0, 0.02)
+        initializer = tf.truncated_normal_initializer(0.0, 0.01)
         # initializer = None
 
         output = lib.nn.conv2d.Conv2D(
@@ -154,7 +155,7 @@ class Agent():
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        dence_initializer = tf.truncated_normal_initializer(stddev=0.01)
         # dence_initializer = None
 
         output = lib.nn.linear.Linear(
