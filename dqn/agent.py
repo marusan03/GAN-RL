@@ -133,37 +133,37 @@ class Agent():
 
     def build_model(self, state):
 
-        initializer = tf.truncated_normal_initializer(0.0, 0.02)
-        # initializer = None
+        # initializer = tf.truncated_normal_initializer(0.0, 0.02)
+        initializer = None
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv1', self.history_length, 32, 8, state, initializer=initializer, stride=4, padding='VALID', data_format=self.data_format)
+            'Conv1', self.history_length, 32, 8, state, initializer=initializer, stride=4, padding='VALID', data_format=self.data_format, pytorch=True, pytorch_biases=True)
         output = tf.nn.relu(output, name='Relu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv2', 32, 32*2, 4, output, initializer=initializer, stride=2, padding='VALID', data_format=self.data_format)
+            'Conv2', 32, 32*2, 4, output, initializer=initializer, stride=2, padding='VALID', data_format=self.data_format, pytorch=True, pytorch_biases=True)
         output = tf.nn.relu(output, name='Relu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv3', 32*2, 32*2, 3, output, initializer=initializer, stride=1, padding='VALID', data_format=self.data_format)
+            'Conv3', 32*2, 32*2, 3, output, initializer=initializer, stride=1, padding='VALID', data_format=self.data_format, pytorch=True, pytorch_biases=True)
         output = tf.nn.relu(output, name='Relu3')
         # (None, 7, 7, 64)
 
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        dence_initializer = tf.random_normal_initializer(stddev=0.02)
+        # dence_initializer = tf.random_normal_initializer(stddev=0.02)
         # dence_initializer = None
 
         output = lib.nn.linear.Linear(
-            'Dence1', 3136, 512, output, initializer=dence_initializer)
+            'Dence1', 3136, 512, output, initialization='pytorch', pytorch_biases=True)
         output = tf.nn.relu(output, name='Relu4')
         # (None, 512)
 
         q_value = lib.nn.linear.Linear(
-            'Dence2', 512, self.num_actions, output, initializer=dence_initializer)
+            'Dence2', 512, self.num_actions, output, initialization='pytorch', pytorch_biases=True)
         # (None, num_actions)
 
         q_action = tf.argmax(q_value, axis=1)
