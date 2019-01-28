@@ -1,3 +1,5 @@
+# https://github.com/Neoanarika/Implementing-the-PowerSign-and-AddSign-rule/blob/master/tensorflow/addsign.py
+
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
