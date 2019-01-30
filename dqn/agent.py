@@ -128,13 +128,13 @@ class Agent():
                                           self.learning_rate_decay,
                                           staircase=True))
 
-        dqn_op = RmsPropGraves(
-            learning_rate_op, decay=0.95, momentum=0.95, epsilon=0.01).minimize(loss)
+        dqn_op = tf.train.RMSPropOptimizer(
+            learning_rate_op, decay=0.9, momentum=0.95, epsilon=0.01).minimize(loss)
         return dqn_op, loss, dqn_summary
 
     def build_model(self, state):
 
-        initializer = tf.truncated_normal_initializer(0.0, 0.01)
+        initializer = tf.truncated_normal_initializer(0.0, 0.02)
         # initializer = None
 
         output = lib.nn.conv2d.Conv2D(
@@ -155,7 +155,7 @@ class Agent():
         output = tf.layers.flatten(output)
         # (None, 3136)
 
-        dence_initializer = tf.truncated_normal_initializer(stddev=0.01)
+        dence_initializer = tf.truncated_normal_initializer(stddev=0.02)
         # dence_initializer = None
 
         output = lib.nn.linear.Linear(
