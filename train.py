@@ -363,7 +363,7 @@ def save_model(sess, saver, checkpoint_dir, step=None):
 
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
-    saver.save(sess, checkpoint_dir, global_step=step)
+    saver.save(sess, checkpoint_dir+'model', global_step=step)
 
 
 def load_model(sess, saver, checkpoint_dir):
