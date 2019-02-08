@@ -46,7 +46,7 @@ class RP():
 
         with tf.name_scope('opt'):
             self.rp_train_op, self.rp_summary = self.build_training_op(
-                self.state, self.action, self.reward)
+                self.state, self.reward)
 
     def get_reward(self, state, action):
         predicted_reward = self.sess.run(self.predicted_reward, feed_dict={
@@ -98,7 +98,7 @@ class RP():
 
         return output
 
-    def build_training_op(self, state, action, reward):
+    def build_training_op(self, state, reward):
         loss = tf.constant(0., dtype=tf.float32)
         for ind in range(self.lookahead + 1):
             outputs = self.predicted_reward[

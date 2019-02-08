@@ -232,7 +232,6 @@ def train(sess, config):
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
                 if config.gats == True:
-                    s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
                     if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                         gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
                         # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
@@ -241,6 +240,9 @@ def train(sess, config):
                             gan_obs_batch, np.expand_dims(act_batch, axis=1))
                         gan_next_obs_batch = trajectories[:,
                                                           -1*config.history_length:, ...]
+
+                        gan_obs_batch, gan_next_obs_batch = unnorm_frame(
+                            gan_obs_batch), unnorm_frame(gan_next_obs_batch)
 
                         s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
                         act_batch = np.concatenate(
@@ -252,8 +254,7 @@ def train(sess, config):
                         terminal_batch = np.concatenate(
                             [terminal_batch, gan_terminal_batch], axis=0)
 
-                s_t, s_t_plus_1 = norm_frame_Q(unnorm_frame(
-                    s_t)), norm_frame_Q(unnorm_frame(s_t_plus_1))
+                s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
@@ -383,7 +384,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     trajectories = gdm.get_state(state, action)
     leaves_q_value = agent.get_q_value(
         norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
-    leaves_Q_max = config.discount ** (config.lookahead) * \
+    leaves_Q_max = (config.discount ** config.lookahead) * \
         np.max(leaves_q_value, axis=1)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
     if sample2 < epsiron:
