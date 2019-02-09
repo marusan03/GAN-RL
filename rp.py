@@ -103,8 +103,8 @@ class RP():
         for ind in range(self.lookahead + 1):
             outputs = self.predicted_reward[
                 :, self.num_rewards*ind: self.num_rewards*(ind + 1)]
-            loss = loss + tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=reward[:, ind], logits=outputs))
+            loss = loss + tf.losses.sparse_softmax_cross_entropy(
+                labels=reward[:, ind], logits=outputs)
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(
