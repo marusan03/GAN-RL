@@ -79,6 +79,8 @@ def train(sess, config):
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
     exploration_gan = LinearSchedule(50000, 0.01)
 
+    agent = Agent(sess, config, num_actions=config.num_actions)
+
     if config.gats == True:
         lookahead = config.lookahead
         rp_train_frequency = 4
@@ -101,7 +103,6 @@ def train(sess, config):
 
         tree_base = base_generator()
 
-    agent = Agent(sess, config, num_actions=config.num_actions)
     # memory = ReplayMemory(config)
     memory = ReplayMemory(config, log_dir)
     history = History(config)

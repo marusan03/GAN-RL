@@ -49,7 +49,7 @@ class EnvironmentConfig(object):
 class GDMConfig(object):
     gan_memory_size = 10000
     gan_learn_start = 10000
-    gan_dqn_learn_start = 200000
+    gan_dqn_learn_start = 1000000
     gan_warmup = 5000
     gan_batch_size = 128
     lookahead = 1
