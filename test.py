@@ -76,8 +76,6 @@ def pray(sess, config):
     for _ in range(config.history_length):
         history.add(screen)
 
-    start_step = 0
-    end_steps = []
     start_episode = 0
     end_episode = 50
 

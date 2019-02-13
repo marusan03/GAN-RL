@@ -129,7 +129,7 @@ class Agent():
                                           staircase=True))
 
         dqn_op = tf.train.RMSPropOptimizer(
-            learning_rate_op, decay=0.9, momentum=0.95, epsilon=0.01).minimize(loss)
+            learning_rate_op, decay=0.95, momentum=0.95, epsilon=0.01).minimize(loss)
         return dqn_op, loss, dqn_summary
 
     def build_model(self, state):
