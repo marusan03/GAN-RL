@@ -156,7 +156,7 @@ def train(sess, config):
             current_state = np.expand_dims(history.get(), axis=0)
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action, predicted_reward = MCTS_planning(
-                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
+                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, gan_memory, step)
                 MCTS_FLAG = True
             else:
                 action = agent.get_action(
@@ -374,11 +374,7 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
         writer.add_summary(summary_str, step)
 
 
-def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
-
-    sample1 = random.random()
-    sample2 = random.random()
-    epsiron = exploration.value(step)
+def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, gan_memory, step):
 
     state = np.repeat(state, leaves_size, axis=0)
     action = tree_base
@@ -387,13 +383,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
     leaves_Q_max = (config.discount ** config.lookahead) * \
         np.max(leaves_q_value, axis=1)
-    leaves_act_max = np.argmax(leaves_q_value, axis=1)
-    if sample2 < epsiron:
-        leaves_act_max = np.random.randint(
-            0, config.num_actions, leaves_act_max.shape)
-    reward_actions = np.concatenate(
-        (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
-    predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
+    predicted_cum_rew = rp.get_reward(trajectories[:, :-1, ...], tree_base)
     predicted_cum_return = np.zeros(leaves_size)
     # ここが微妙
     for i in range(config.lookahead):
@@ -404,15 +394,12 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     max_idx = np.argmax(GATS_action, axis=0)
     return_action = int(tree_base[max_idx, 0])
     # DQNがGANの不完全さを吸収するために必要?
-    if sample1 < epsiron:
-        max_idx = random.randrange(leaves_size)
-    obs = trajectories[max_idx, -(config.history_length):, ...]
-    act_batch = np.squeeze(leaves_act_max[max_idx])
+    obs = trajectories[max_idx, :-1, ...]
+    act_batch = np.squeeze(tree_base[max_idx, 0])
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
-    predicted_reward = np.argmax(
-        predicted_cum_rew[max_idx, 0:(config.num_rewards)], axis=0) - 1
+    predicted_reward = np.argmax(predicted_cum_rew[max_idx]) -1.
     return return_action, predicted_reward
 
 
