@@ -280,9 +280,9 @@ class ReplayMemory:
     def reward_sample2(self, batch_size, lookahead):
         assert self.can_sample(batch_size)
         # idxes = sample_n_unique(lambda: random.randint(lookahead, self.current - 2 - lookahead), batch_size)
-        idxes = sample_n_unique(lambda: (self.current-random.randint(lookahead+self.history_length, 60000)) %
-                                (self.count-lookahead-self.history_length), batch_size)
-        return self.reward_encode_sample(idxes, lookahead)
+        idxes = sample_n_unique(lambda: (self.current-random.randint(lookahead-1+self.history_length, 60000)) %
+                                (self.count-lookahead-1-self.history_length), batch_size)
+        return self.reward_encode_sample(idxes, lookahead-1)
 
     def GAN_encode_sample(self, idxes, lookahead):
         obs_batch = np.concatenate(
