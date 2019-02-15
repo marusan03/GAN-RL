@@ -195,11 +195,8 @@ def train(sess, config):
                 rew_batch = np.concatenate((rew, reward_rew), axis=0)
                 reward_label = rew_batch + 1
 
-                trajectories = gdm.get_state(
-                    obs_batch, act_batch[:, :-1])
-
                 rp_summary = rp.train(
-                    trajectories, act_batch, reward_label)
+                    obs_batch, act_batch, reward_label)
                 writer.add_summary(rp_summary, step)
 
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
