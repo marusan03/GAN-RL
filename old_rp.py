@@ -122,7 +122,8 @@ class RP():
 
         rp_summary = tf.summary.scalar('rp_loss', loss)
 
-        rp_train_op = tf.train.AdamOptimizer(
-            learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='rp')):
+            rp_train_op = tf.train.AdamOptimizer(
+                learning_rate=2e-4, beta1=0.5, beta2=0.999, name='rp_adam').minimize(loss)
 
         return rp_train_op, rp_summary
