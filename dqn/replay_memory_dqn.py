@@ -301,9 +301,9 @@ class ReplayMemory:
     def nonzero_reward_sample(self, batch_size, lookahead):
         # assert self.can_sample_nonzero_rewards(lookahead)
         # nonzero_idxes = np.random.choice(self.nonzero_rewards, size=batch_size)
-        idxes = [self.get_rand_nonzero_idx(lookahead)
+        idxes = [self.get_rand_nonzero_idx(lookahead-1)
                  for i in range(batch_size)]
-        return self.reward_encode_sample(idxes, lookahead)
+        return self.reward_encode_sample(idxes, lookahead-1)
 
     def reward_encode_sample(self, idxes, lookahead=1):
         self.reward_states = np.concatenate(
