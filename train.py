@@ -13,7 +13,7 @@ from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
-from rp import RP
+from old_rp import RP
 from dqn.utils import LinearSchedule
 
 
