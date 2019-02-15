@@ -45,7 +45,7 @@ class RP():
                 self.state, (0, 2, 3, 1), name='NCHW_to_NHWC')
 
         with tf.variable_scope('RP'):
-            self.predicted_reward = self.build_rp(self.state, self.action)
+            self.predicted_reward = self.build_rp(self.state, self.action, self.is_training)
 
         with tf.name_scope('opt'):
             self.rp_train_op, self.rp_summary = self.build_training_op(
@@ -53,34 +53,34 @@ class RP():
 
     def get_reward(self, state, action):
         predicted_reward = self.sess.run(self.predicted_reward, feed_dict={
-            self.state: norm_state_Q_GAN(state), self.action: action})
+            self.state: norm_state_Q_GAN(state), self.action: action, self.is_training: False})
         return predicted_reward
 
     def train(self, state, action, reward):
         _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
-            self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
+            self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward, self.is_training: True})
         return rp_summary
 
-    def build_rp(self, state, action):
+    def build_rp(self, state, action, is_training):
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.1', self.history_length+self.lookahead-1, 32, 8, state, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=4, pytorch_biases=True, padding='VALID', data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=self.is_training, name='BN1')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=is_training, name='BN1')
         output = tf.nn.leaky_relu(output, 0.1, name='ralu1')
         # (None, 20, 20, 32)
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.2', 32, 64, 4, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=2, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=self.is_training, name='BN2')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=is_training, name='BN2')
         output = tf.nn.leaky_relu(output, 0.1, name='ralu2')
         # (None, 9, 9, 64)
 
         output = lib.nn.conv2d.Conv2D(
             'RP_Conv.3', 64, 64, 3, output, initializer=self.initializer, weight_decay_scale=self.rp_weight_decay, stride=1, padding='VALID', pytorch_biases=True, data_format=self.data_format)
         output = tf.layers.batch_normalization(
-            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=self.is_training, name='BN3')
+            output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.rp_weight_decay), training=is_training, name='BN3')
         # (None, 7, 7, 64)
 
         output = tf.layers.flatten(output, name='RP_Flatten')
