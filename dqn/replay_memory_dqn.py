@@ -237,14 +237,14 @@ class ReplayMemory:
                 # sample one index (ignore states wraping over
                 if nonzero == True and (len(self.nonzero_rewards) > 0):
                     nonzero_index = np.random.choice(
-                        self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead)
-                    while nonzero_index % (self.count-self.lookahead-2) != nonzero_index:
+                        self.nonzero_rewards, size=1)[0] - random.randint(0, self.lookahead-1)
+                    while nonzero_index % (self.count-self.lookahead-1) != nonzero_index:
                         nonzero_index = np.random.choice(self.nonzero_rewards, size=1)[
-                            0] - random.randint(0, self.lookahead)
+                            0] - random.randint(0, self.lookahead-1)
                     index = nonzero_index
                 else:
                     index = index = random.randint(
-                        self.history_length + self.lookahead, self.count - (1 + (self.lookahead + 1)))
+                        self.history_length + self.lookahead, self.count - (1 + self.lookahead))
                 # if wraps over current pointer, then get new one
                 if index - 1 >= self.current and index - self.history_length < self.current:
                     continue
@@ -259,8 +259,8 @@ class ReplayMemory:
             self.reward_states[len(indexes), ...] = self.getState(index - 1)
             indexes.append(index)
 
-        actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
-        rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
+        actions = [self.actions[i:i+self.lookahead] for i in indexes]
+        rewards = [self.rewards[i:i+self.lookahead] for i in indexes]
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
