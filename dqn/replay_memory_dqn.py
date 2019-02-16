@@ -288,7 +288,7 @@ class ReplayMemory:
         obs_batch = np.concatenate(
             [self._encode_observation(idx-1)[np.newaxis, :] for idx in idxes], 0)
         gan_seq = [self.GAN_encode_observation_action(
-            idx + 1, lookahead) for idx in idxes]
+            idx, lookahead) for idx in idxes]
         act_batch = np.concatenate(
             [gan_seq[i][1][np.newaxis, :, 0] for i in range(len(idxes))], 0)
         # reward_batch = np.concatenate(
