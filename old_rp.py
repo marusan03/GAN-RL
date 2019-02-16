@@ -107,12 +107,8 @@ class RP():
         return output
 
     def build_training_op(self, state, reward):
-        loss = tf.constant(0., dtype=tf.float32)
-        for ind in range(self.lookahead):
-            outputs = self.predicted_reward[
-                :, self.num_rewards*ind: self.num_rewards*(ind + 1)]
-            loss = loss + tf.losses.sparse_softmax_cross_entropy(
-                labels=reward[:, ind], logits=outputs)
+        loss = tf.losses.sparse_softmax_cross_entropy(
+            labels=reward[:, 0], logits=self.predicted_reward)
 
         with tf.name_scope('weight_decay'):
             rp_weight_decay = tf.losses.get_regularization_loss(
