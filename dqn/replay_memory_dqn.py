@@ -286,7 +286,7 @@ class ReplayMemory:
 
     def GAN_encode_sample(self, idxes, lookahead):
         obs_batch = np.concatenate(
-            [self._encode_observation(idx-1)[np.newaxis, :] for idx in idxes], 0)
+            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
         gan_seq = [self.GAN_encode_observation_action(
             idx, lookahead) for idx in idxes]
         act_batch = np.concatenate(
@@ -307,8 +307,8 @@ class ReplayMemory:
 
     def reward_encode_sample(self, idxes, lookahead=1):
         self.reward_states = np.concatenate(
-            [self._encode_observation(idx-1)[np.newaxis, :] for idx in idxes], 0)
-        seq = [self._encode_reward_action(idx + 1, lookahead) for idx in idxes]
+            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
+        seq = [self._encode_reward_action(idx, lookahead) for idx in idxes]
         act_batch = np.concatenate(
             [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
         rew_batch = np.concatenate([seq[i][1][np.newaxis, :, 0]
