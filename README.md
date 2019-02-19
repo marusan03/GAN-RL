@@ -1,52 +1,19 @@
 # GAN-RL
 
-
+# dif
+![demo1](https://github.com/e155763/GAN-RL/blob/master/gif/demo1.gif)
+![demo2](https://github.com/e155763/GAN-RL/blob/master/gif/demo2.gif)
+![demo3](https://github.com/e155763/GAN-RL/blob/master/gif/demo3.gif)
+![demo4](https://github.com/e155763/GAN-RL/blob/master/gif/demo4.gif)
+![demo5](https://github.com/e155763/GAN-RL/blob/master/gif/demo5.gif)
+![demo6](https://github.com/e155763/GAN-RL/blob/master/gif/demo6.gif)
 # PROGRESS
-- GDMのforward作成  
-    - [x] forwardの作成  
-    - [x] loss関数の作成  
-    - [x] test  
-
-- Discriminator作成
-    - [x] modelの作成  
-    - [x] loss関数の作成  
-    - [x] test  
-
-- Reward Predictor作成  
-    - [x] modelの作成  
-    - [x] loss関数の作成  
-    - [ ] test  
-        - うまく動いていない？  
-        - lossが振動する  
-
-- DQNの作成
-    - [x] forwardの作成  
-    - [x] Repray Memoryの作成  
-    - [x] target Q networkの作成  
-    - [x] test  
-
-- OpenAI gymの作成
-    - [x] 環境はどうするか  
-        - Pongを使用
-    - [x] トレーニング用に作成  
-
-- trainの作成
-    - [x] バッチノーマライゼーションの設定  
-    - [x] それぞれの学習の設定  
-    - [x] チェックポイントの作成  
-        - [x] 各モデルごとに作成  
-        - [x] 読み込みも  
-
-- testの作成  
-    - [x] チェックポイントの読み込み  
-    - [x] ログの作成  
-    - [x] グラフの作成  
-    - [ ] 動画の作成  
+- GATS完成
 
 - extra  
     - できればA3Cや他の深層強化学習と組み合わせたい  
-    - RPの仕組みをDiscriminatorに組み込みたい(like ACGAN)  
-    - GDMをもっと先まで予測できるようにしたい  
+    - RPの改善
+    - GDMをもっと先まで予測してみる 
 
 # REFERENCE
 - SN-Convolution
