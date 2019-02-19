@@ -1,6 +1,6 @@
 # GAN-RL
 
-# dif
+# gif
 ![demo1](https://github.com/e155763/GAN-RL/blob/master/gif/demo1.gif)
 ![demo2](https://github.com/e155763/GAN-RL/blob/master/gif/demo2.gif)
 ![demo3](https://github.com/e155763/GAN-RL/blob/master/gif/demo3.gif)
