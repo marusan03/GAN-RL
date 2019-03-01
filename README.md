@@ -8,7 +8,8 @@
 ![demo5](https://github.com/e155763/GAN-RL/blob/master/gif/demo5.gif)
 ![demo6](https://github.com/e155763/GAN-RL/blob/master/gif/demo6.gif)
 # PROGRESS
-- GATS完成
+- GATS完成?
+- RPがうまく機能していない
 
 - extra  
     - できればA3Cや他の深層強化学習と組み合わせたい  
