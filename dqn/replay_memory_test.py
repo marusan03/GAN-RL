@@ -231,8 +231,14 @@ class ReplayMemory:
                             self.nonzero_rewards) - random.randint(0, self.lookahead)
                     index = nonzero_index
                 else:
-                    index = random.randint(
-                        self.history_length + self.lookahead, self.count - (1 + (self.lookahead + 1)))
+                    if self.count < 60000:
+                        index = random.randint(
+                            self.history_length + self.lookahead, self.count - (1 + (self.lookahead + 1)))
+                    else:
+                        index = (self.current-random.randint(self.lookahead+self.history_length,
+                                                             60000)) % (self.count-self.lookahead-self.history_length)
+                        if 0 > index:
+                            index += self.count
                 # if wraps over current pointer, then get new one
                 if index - 1 >= self.current and index - self.history_length < self.current:
                     continue
@@ -244,11 +250,13 @@ class ReplayMemory:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(index)
+            self.reward_states[len(indexes), ...] = self.getState(index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
         rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
+        if nonzero == True:
+            print(rewards)
 
         if self.cnn_format == 'NHWC':
             return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
@@ -263,7 +271,7 @@ if __name__ == "__main__":
     class config():
         cnn_format = 'NCHW'
         memory_size = 100000
-        batch_size = 32
+        batch_size = 5
         gan_batch_size = 5
         rp_batch_size = 5
         lookahead = 1
@@ -273,20 +281,21 @@ if __name__ == "__main__":
     config = config()
     model_dir = ""
     test_memory = ReplayMemory(config, model_dir)
-    test_data = np.arange(1, 10001)
-    test_memory.actions[0: 10000] = test_data
-    test_memory.rewards[0: 10000] = test_data
-    test_memory.screens[0: 10000, ...] = np.repeat(
-        test_data, 1**2).reshape([10000, 1, 1])
+    test_data = np.arange(1, 101)
+    test_memory.actions[0: 100] = test_data
+    test_memory.rewards[0: 100] = test_data
+    test_memory.screens[0: 100, ...] = np.repeat(
+        test_data, 1**2).reshape([100, 1, 1])
     # print(test_memory.rewards)
     # print(test_memory.actions)
-    test_memory.count = 10000
-    test_memory.current = 10000
+    test_memory.count = 100
+    test_memory.current = 100
     # pre, act, cur = test_memory.GAN_sample()
     # print(pre.reshape([-1]))
     # print(act.reshape([-1]))
     # print(cur.reshape([-1]))
-    ste, act2, rew = test_memory.reward_sample()
+    ste, act, rew, ste2, _ = test_memory.sample()
     print(ste.reshape([-1]))
-    print(np.array(act2).reshape([-1]))
-    print(np.array(rew).reshape([-1]))
+    print(act.reshape([-1]))
+    print(rew.reshape([-1]))
+    print(ste2.reshape([-1]))
