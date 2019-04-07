@@ -250,7 +250,7 @@ class ReplayMemory:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(index - 1)
+            self.reward_states[len(indexes), ...] = self.getState(index)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
