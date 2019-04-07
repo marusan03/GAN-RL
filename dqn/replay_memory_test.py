@@ -60,7 +60,7 @@ class ReplayMemory:
         self.cnn_format = config.cnn_format
         self.memory_size = config.memory_size
         self.actions = np.empty(self.memory_size, dtype=np.uint8)
-        self.rewards = np.empty(self.memory_size, dtype=np.integer)
+        self.rewards = np.empty(self.memory_size, dtype=np.float32)
         self.screens = np.empty(
             (self.memory_size, config.screen_height, config.screen_width), dtype=np.uint8)
         self.terminals = np.empty(self.memory_size, dtype=np.bool)
@@ -202,7 +202,7 @@ class ReplayMemory:
 
             # NB! having index first is fastest in C-order matrices
             self.gan_states[len(indexes), ...] = self.getState(
-                index - 1, self.lookahead)
+                index, self.lookahead)
             indexes.append(index)
 
         if self.lookahead == 1:
@@ -288,9 +288,9 @@ if __name__ == "__main__":
     # print(test_memory.actions)
     test_memory.count = 100
     test_memory.current = 100
-    # pre, act, cur = test_memory.GAN_sample()
-    # print(pre.reshape([-1]))
-    # print(act.reshape([-1]))
+    pre, act, cur = test_memory.GAN_sample()
+    print(pre.reshape([-1]))
+    print(act.reshape([-1]))
     # print(cur.reshape([-1]))
     ste, act, rew, ste2, _ = test_memory.sample()
     print(ste.reshape([-1]))
