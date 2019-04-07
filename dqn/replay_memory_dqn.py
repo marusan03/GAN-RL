@@ -313,6 +313,7 @@ class ReplayMemory:
             [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
         rew_batch = np.concatenate([seq[i][1][np.newaxis, :, 0]
                                     for i in range(len(idxes))], 0)
+        print(rew_batch)
         return self.reward_states, act_batch, rew_batch
 
     def get_rand_nonzero_idx(self, lookahead=1):
