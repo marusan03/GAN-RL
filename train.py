@@ -9,7 +9,8 @@ import numpy as np
 
 from dqn.environment import GymEnvironment
 # from dqn.replay_memory import ReplayMemory, GANReplayMemory
-from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
+# from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
+from dqn.replay_memory_test import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
@@ -182,13 +183,13 @@ def train(sess, config):
         # Train
         if step > config.gan_learn_start and config.gats:
             if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
-                # obs, act, rew = memory.reward_sample()
-                obs, act, rew = memory.reward_sample2(
-                    config.rp_batch_size, config.lookahead)
-                # reward_obs, reward_act, reward_rew = memory.reward_sample(
-                #     nonzero=True)
-                reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
-                    config.rp_batch_size, config.lookahead)
+                obs, act, rew = memory.reward_sample()
+                # obs, act, rew = memory.reward_sample2(
+                #     config.rp_batch_size, config.lookahead)
+                reward_obs, reward_act, reward_rew = memory.reward_sample(
+                    nonzero=True)
+                # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
+                #     config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
                     np.concatenate((obs, reward_obs), axis=0))
                 act_batch = np.concatenate((act, reward_act), axis=0)
@@ -203,9 +204,9 @@ def train(sess, config):
                 writer.add_summary(rp_summary, step)
 
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                # state_batch, act_batch, next_state_batch = memory.GAN_sample()
-                state_batch, act_batch, next_state_batch = memory.GAN_sample2(
-                    config.gan_batch_size, config.lookahead)
+                state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                # state_batch, act_batch, next_state_batch = memory.GAN_sample2(
+                #     config.gan_batch_size, config.lookahead)
 
                 warmup_bool = []
                 for _ in range(config.lookahead):
