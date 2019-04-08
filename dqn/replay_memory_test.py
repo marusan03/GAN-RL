@@ -265,10 +265,10 @@ class ReplayMemory:
         return batch_size + 1 <= self.count
 
 
-if __name__ == "__main__":
+def test_dqn_replay_memory():
     class config():
         cnn_format = 'NCHW'
-        memory_size = 100000
+        memory_size = 100
         batch_size = 5
         gan_batch_size = 5
         rp_batch_size = 5
@@ -287,13 +287,18 @@ if __name__ == "__main__":
     # print(test_memory.rewards)
     # print(test_memory.actions)
     test_memory.count = 100
-    test_memory.current = 100
-    pre, act, cur = test_memory.GAN_sample()
-    print(pre.reshape([-1]))
-    print(act.reshape([-1]))
-    # print(cur.reshape([-1]))
-    ste, act, rew, ste2, _ = test_memory.sample()
-    print(ste.reshape([-1]))
-    print(act.reshape([-1]))
-    print(rew.reshape([-1]))
-    print(ste2.reshape([-1]))
+    test_memory.current = random.randint(0, 100)
+
+    pre, act, rew, post, _ = test_memory.sample()
+    pre_index = pre[]
+
+    assert pre == np.arange(
+        pre_index - 4, pre_index), "{},{}".format(pre, np.arange(pre_index - 4, pre_index))
+    assert act == pre_index + 1
+    assert rew == pre_index + 1
+    assert post == pre_index
+
+
+if __name__ == "__main__":
+
+    test_dqn_replay_memory()

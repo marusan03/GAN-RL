@@ -73,7 +73,8 @@ class GDM():
                 [self.trajectories, self.state], axis=1)
 
         with tf.name_scope('opt'):
-            self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary, self.merged_summary = self.build_training_op()
+            # self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary, self.merged_summary = self.build_training_op()
+            self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary = self.build_training_op()
 
     def get_state(self, state, action):
         predicted_state = self.sess.run(self.trajectories, feed_dict={
@@ -95,9 +96,11 @@ class GDM():
                 self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
 
         # train gdm
-        _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
+        # _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
+        #     self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
+        _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
             self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
-        return gdm_summary, disc_summary, merged_summary
+        return gdm_summary, disc_summary
 
     def disc_train(self, pre_state, action, post_state, iteration=1):
         for _ in range(iteration):
@@ -107,9 +110,11 @@ class GDM():
 
     def gdm_train(self, pre_state, action, post_state, warmup, iteration=1):
         for _ in range(iteration):
-            _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
+            # _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
+            #     self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
+            _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
                 self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
-        return gdm_summary, merged_summary
+        return gdm_summary
 
     def build_gdm(self, state, action, is_training, lookahead=1, ngf=32):
 
@@ -374,15 +379,16 @@ class GDM():
         disc_summary = tf.summary.scalar('disc_loss', disc_loss)
 
         with tf.name_scope('L1_L2_loss'):
-            difference = fake_state[:, -1*self.lookahead:, ...] - self.post_state
+            difference = fake_state[:, -1 *
+                                    self.lookahead:, ...] - self.post_state
             l1_loss = tf.reduce_mean(tf.abs(difference))
-            l1_summary = tf.summary.scalar('l1_loss', l1_loss)
+            # l1_summary = tf.summary.scalar('l1_loss', l1_loss)
             l2_loss = tf.reduce_mean(tf.square(difference))
-            l2_summary = tf.summary.scalar('l2_loss', l2_loss)
+            # l2_summary = tf.summary.scalar('l2_loss', l2_loss)
             gdm_loss = l2_loss * self.lambda_l2 + l1_loss * self.lambda_l1 + gdm_loss
-            gan_summary = tf.summary.scalar('gdm_L1_L2_loss', gdm_loss)
-            merged_summary = tf.summary.merge(
-                [gan_summary, l1_summary, l2_summary], name='merged_summary')
+            # gan_summary = tf.summary.scalar('gdm_L1_L2_loss', gdm_loss)
+            # merged_summary = tf.summary.merge(
+            #     [gan_summary, l1_summary, l2_summary], name='merged_summary')
 
         gdm_params = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, scope='gdm')
@@ -398,4 +404,4 @@ class GDM():
             disc_train_op = tf.train.MomentumOptimizer(
                 learning_rate=1e-5, momentum=0.9, name='disc_SGD').minimize(disc_loss, var_list=disc_params)
 
-        return gdm_train_op, disc_train_op, gdm_summary, disc_summary, merged_summary
+        return gdm_train_op, disc_train_op, gdm_summary, disc_summary

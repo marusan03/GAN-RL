@@ -219,12 +219,14 @@ def train(sess, config):
                         gan_epsiron = 0
                     warmup_bool.append(sample > gan_epsiron)
 
-                gdm.summary, disc_summary, merged_summary = gdm.train(
+                # gdm.summary, disc_summary, merged_summary = gdm.train(
+                #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
+                gdm.summary, disc_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
 
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)
-                writer.add_summary(merged_summary, step)
+                # writer.add_summary(merged_summary, step)
                 gen_step += 1
 
         if step > config.learn_start:
@@ -403,6 +405,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
                 (i+1)*config.num_rewards)], axis=1)-1.)
     GATS_action = leaves_Q_max + predicted_cum_return
     max_idx = np.argmax(GATS_action, axis=0)
+    predicted_reward = np.argmax(
+        predicted_cum_rew[max_idx, 0:config.num_rewards], axis=0) - 1
     return_action = int(tree_base[max_idx, 0])
     # DQNがGANの不完全さを吸収するために必要?
     if sample1 < epsiron:
@@ -412,8 +416,6 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
-    predicted_reward = np.argmax(
-        predicted_cum_rew[max_idx, 0:(config.num_rewards)], axis=0) - 1
     return return_action, predicted_reward
 
 
