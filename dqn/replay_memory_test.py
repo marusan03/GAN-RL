@@ -202,7 +202,7 @@ class ReplayMemory:
 
             # NB! having index first is fastest in C-order matrices
             self.gan_states[len(indexes), ...] = self.getState(
-                index, self.lookahead)
+                index - 1, self.lookahead)
             indexes.append(index)
 
         if self.lookahead == 1:
@@ -239,6 +239,9 @@ class ReplayMemory:
                                                              60000)) % (self.count-self.lookahead-self.history_length)
                         if 0 > index:
                             index += self.count
+                    if nonzero == False and ((index in self.nonzero_rewards) or (index + 1 in self.nonzero_rewards)):
+                        continue
+
                 # if wraps over current pointer, then get new one
                 if index - 1 >= self.current and index - self.history_length < self.current:
                     continue
@@ -250,7 +253,7 @@ class ReplayMemory:
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(index)
+            self.reward_states[len(indexes), ...] = self.getState(index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
@@ -265,40 +268,40 @@ class ReplayMemory:
         return batch_size + 1 <= self.count
 
 
-def test_dqn_replay_memory():
-    class config():
-        cnn_format = 'NCHW'
-        memory_size = 100
-        batch_size = 5
-        gan_batch_size = 5
-        rp_batch_size = 5
-        lookahead = 1
-        history_length = 4
-        screen_height = 1
-        screen_width = 1
-    config = config()
-    model_dir = ""
-    test_memory = ReplayMemory(config, model_dir)
-    test_data = np.arange(1, 101)
-    test_memory.actions[0: 100] = test_data
-    test_memory.rewards[0: 100] = test_data
-    test_memory.screens[0: 100, ...] = np.repeat(
-        test_data, 1**2).reshape([100, 1, 1])
-    # print(test_memory.rewards)
-    # print(test_memory.actions)
-    test_memory.count = 100
-    test_memory.current = random.randint(0, 100)
+# def test_dqn_replay_memory():
+#     class config():
+#         cnn_format = 'NCHW'
+#         memory_size = 100
+#         batch_size = 5
+#         gan_batch_size = 5
+#         rp_batch_size = 5
+#         lookahead = 1
+#         history_length = 4
+#         screen_height = 1
+#         screen_width = 1
+#     config = config()
+#     model_dir = ""
+#     test_memory = ReplayMemory(config, model_dir)
+#     test_data = np.arange(1, 101)
+#     test_memory.actions[0: 100] = test_data
+#     test_memory.rewards[0: 100] = test_data
+#     test_memory.screens[0: 100, ...] = np.repeat(
+#         test_data, 1**2).reshape([100, 1, 1])
+#     # print(test_memory.rewards)
+#     # print(test_memory.actions)
+#     test_memory.count = 100
+#     test_memory.current = random.randint(0, 100)
 
-    pre, act, rew, post, _ = test_memory.sample()
-    pre_index = pre[]
+#     pre, act, rew, post, _ = test_memory.sample()
+#     pre_index = pre[]
 
-    assert pre == np.arange(
-        pre_index - 4, pre_index), "{},{}".format(pre, np.arange(pre_index - 4, pre_index))
-    assert act == pre_index + 1
-    assert rew == pre_index + 1
-    assert post == pre_index
+#     assert pre == np.arange(
+#         pre_index - 4, pre_index), "{},{}".format(pre, np.arange(pre_index - 4, pre_index))
+#     assert act == pre_index + 1
+#     assert rew == pre_index + 1
+#     assert post == pre_index
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    test_dqn_replay_memory()
+#     test_dqn_replay_memory()
