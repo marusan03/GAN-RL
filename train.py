@@ -187,7 +187,7 @@ def train(sess, config):
                 # obs, act, rew = memory.reward_sample2(
                 #     config.rp_batch_size, config.lookahead)
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=True)
+                    nonzero=False)
                 # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
                 #     config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
