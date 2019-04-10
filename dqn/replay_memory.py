@@ -289,10 +289,11 @@ if __name__ == "__main__":
     # print(test_memory.actions)
     test_memory.num_in_buffer = 100
     test_memory.next_idx = 100
-    # pre, act, cur = test_memory.GAN_sample()
-    # print(pre.reshape([-1]))
-    # print(act.reshape([-1]))
-    # print(cur.reshape([-1]))
+    pre, act, rew, nex, _ = test_memory.sample(5, 1)
+    print(pre.reshape([-1]))
+    print(act.reshape([-1]))
+    print(rew.reshape([-1]))
+    print(nex.reshape([-1]))
     obs, act, nex = test_memory.GAN_sample(5, 1)
     print(obs.reshape([-1]))
     print(act.reshape([-1]))

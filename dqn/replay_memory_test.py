@@ -237,10 +237,10 @@ class ReplayMemory:
                     else:
                         index = (self.current-random.randint(self.lookahead+self.history_length,
                                                              60000)) % (self.count-self.lookahead-self.history_length)
-                        if 0 > index:
-                            index += self.count
-                    if nonzero == False and ((index in self.nonzero_rewards) or (index + 1 in self.nonzero_rewards)):
-                        continue
+                    #     if 0 > index:
+                    #         index += self.count
+                    # if nonzero == False and ((index in self.nonzero_rewards) or (index + 1 in self.nonzero_rewards)):
+                    #     continue
 
                 # if wraps over current pointer, then get new one
                 if index - 1 >= self.current and index - self.history_length < self.current:
