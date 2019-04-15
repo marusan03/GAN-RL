@@ -188,8 +188,11 @@ class ReplayMemory:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
-                index = random.randint(
-                    self.history_length + self.lookahead, self.count - (1 + self.lookahead))
+                # index = random.randint(
+                #     self.history_length + self.lookahead, self.count - (1 + self.lookahead))
+                index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
+                    self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
+
                 # if wraps over current pointer, then get new one
                 if index + (self.lookahead - 1) >= self.current and index - self.history_length < self.current:
                     continue
@@ -248,6 +251,7 @@ class ReplayMemory:
                 # if wraps over episode end, then get new one
                 # NB! poststate (last screen) can be terminal state!
                 if self.terminals[(index - self.history_length):index + self.lookahead].any():
+
                     continue
                 # otherwise use this index
                 break
