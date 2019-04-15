@@ -246,7 +246,7 @@ class ReplayMemory:
                     #     continue
 
                 # if wraps over current pointer, then get new one
-                if index - 1 >= self.current and index - self.history_length < self.current:
+                if index + self.lookahead >= self.current and index - self.history_length < self.current:
                     continue
                 # if wraps over episode end, then get new one
                 # NB! poststate (last screen) can be terminal state!
