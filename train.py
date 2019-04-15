@@ -187,7 +187,7 @@ def train(sess, config):
                 # obs, act, rew = memory.reward_sample2(
                 #     config.rp_batch_size, config.lookahead)
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=False)
+                    nonzero=True)
                 # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
                 #     config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
@@ -448,7 +448,7 @@ def save_model(sess, saver, checkpoint_dir, step=None):
 
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
-    saver.save(sess, checkpoint_dir, global_step=step)
+    saver.save(sess, checkpoint_dir+'model_', global_step=step)
 
 
 def load_model(sess, saver, checkpoint_dir):
