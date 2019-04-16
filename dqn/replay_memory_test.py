@@ -258,11 +258,11 @@ class ReplayMemory:
                 # if wraps over episode end, then get new one
                 # NB! poststate (last screen) can be terminal state!
                 if self.terminals[(index - self.history_length):index - 1].any():
-                    missing_context_index = np.where(
-                        self.terminals[(index - self.history_length):index - 1] == True)
-                    missing_context = self.history_length - index - missing_context_index
-                    break
-                    # continue
+                #     missing_context_index = np.where(
+                #         self.terminals[(index - self.history_length):index - 1] == True)
+                #     missing_context = self.history_length - index - missing_context_index
+                #     break
+                    continue
                 # otherwise use this index
                 break
 
