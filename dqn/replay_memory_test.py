@@ -189,9 +189,13 @@ class ReplayMemory:
             while True:
                 # sample one index (ignore states wraping over
                 # index = random.randint(
-                #     self.history_length + self.lookahead, self.count - (1 + self.lookahead))
-                index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
-                    self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
+                #     self.history_length, self.count - (1 + (self.lookahead - 1)))
+                if self.count < 60000:
+                    index = random.randint(
+                        self.history_length, self.count - (1 + (self.lookahead - 1)))
+                else:
+                    index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
+                        self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
 
                 # if wraps over current pointer, then get new one
                 if index + (self.lookahead - 1) >= self.current and index - self.history_length < self.current:
@@ -218,11 +222,14 @@ class ReplayMemory:
         else:
             return self.gan_states[:, :self.history_length, ...], actions, self.gan_states[:, self.history_length:, ...]
 
-    def reward_sample(self, nonzero=False):
+    def reward_sample(self, batch_size, nonzero=False):
         assert self.count > self.rp_batch_size
 
         indexes = []
-        while len(indexes) < self.rp_batch_size:
+        missing_context = 0
+        missing_context_index = 0
+        missing_context_indexes = []
+        while len(indexes) < batch_size:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
@@ -236,9 +243,9 @@ class ReplayMemory:
                 else:
                     if self.count < 60000:
                         index = random.randint(
-                            self.history_length + self.lookahead, self.count - (1 + (self.lookahead + 1)))
+                            self.history_length + self.lookahead, self.count - (1 + self.lookahead))
                     else:
-                        index = (self.current-random.randint(self.lookahead+self.history_length,
+                        index = (self.current-random.randint(self.history_length,
                                                              60000)) % (self.count-self.lookahead-self.history_length)
                     #     if 0 > index:
                     #         index += self.count
@@ -246,18 +253,29 @@ class ReplayMemory:
                     #     continue
 
                 # if wraps over current pointer, then get new one
-                if index + self.lookahead >= self.current and index - self.history_length < self.current:
+                if index - 1 >= self.current and index - self.history_length < self.current:
                     continue
                 # if wraps over episode end, then get new one
                 # NB! poststate (last screen) can be terminal state!
-                if self.terminals[(index - self.history_length):index + self.lookahead].any():
-
-                    continue
+                if self.terminals[(index - self.history_length):index - 1].any():
+                    missing_context_index = np.where(
+                        self.terminals[(index - self.history_length):index - 1] == True)
+                    missing_context = self.history_length - index - missing_context_index
+                    break
+                    # continue
                 # otherwise use this index
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(index - 1)
+            if missing_context_index > 0:
+                buf_state = self.getState(index - 1)
+                buf_state[: missing_context] = np.repeat(
+                    buf_state[missing_context + 1: ...], missing_context, 0)
+                self.reward_states[len(indexes), ...] = buf_state
+                missing_context_indexes.append(index)
+            else:
+                self.reward_states[len(indexes), ...] = self.getState(
+                    index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
