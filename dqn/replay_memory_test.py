@@ -69,6 +69,7 @@ class ReplayMemory:
         self.batch_size = config.batch_size
         self.gan_batch_size = config.gan_batch_size
         self.rp_batch_size = config.rp_batch_size
+        self.nonzero_batch_size = config.nonzero_batch_size
         self.lookahead = config.lookahead
         self.count = 0
         self.current = 0
@@ -85,6 +86,8 @@ class ReplayMemory:
             (self.gan_batch_size, self.history_length + self.lookahead) + self.dims, dtype=np.uint8)
         self.reward_states = np.empty(
             (self.rp_batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.nonzero_states = np.empty(
+            (self.nonzero_batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add(self, screen, reward, action, terminal):
         assert screen.shape == self.dims
@@ -223,7 +226,7 @@ class ReplayMemory:
             return self.gan_states[:, :self.history_length, ...], actions, self.gan_states[:, self.history_length:, ...]
 
     def reward_sample(self, batch_size, nonzero=False):
-        assert self.count > self.rp_batch_size
+        assert self.count > batch_size
 
         indexes = []
         missing_context = 0
@@ -274,17 +277,27 @@ class ReplayMemory:
                 self.reward_states[len(indexes), ...] = buf_state
                 missing_context_indexes.append(index)
             else:
-                self.reward_states[len(indexes), ...] = self.getState(
-                    index - 1)
+                if nonzero == False:
+                    self.reward_states[len(indexes), ...] = self.getState(
+                        index - 1)
+                else:
+                    self.nonzero_states[len(indexes), ...] = self.getState(
+                        index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
         rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
+            if nonzero == False:
+                return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
+            else:
+                return np.transpose(self.nonzero_states, (0, 2, 3, 1)), actions, rewards
         else:
-            return self.reward_states, actions, rewards
+            if nonzero == False:
+                return self.reward_states, actions, rewards
+            else:
+                return self.nonzero_states, actions, rewards
 
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count

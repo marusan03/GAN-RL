@@ -181,7 +181,7 @@ def train(sess, config):
                 nonzero_rp_accuracy.append(int(predicted_reward == reward))
 
         # Train
-        if step > config.gan_learn_start and config.gats:
+        if step > config.gan_learn_start and config.gats:    
             if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
                 obs, act, rew = memory.reward_sample(
                     config.rp_batch_size)
@@ -203,9 +203,9 @@ def train(sess, config):
                 rp_summary = rp.train(
                     trajectories, act_batch, reward_label)
                 writer.add_summary(rp_summary, step)
-
+                
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
-                state_batch, act_batch, next_state_batch = memory.GAN_sample()
+                state_batch, action_batch, next_state_batch = memory.GAN_sample()
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample2(
                 #     config.gan_batch_size, config.lookahead)
 
@@ -223,7 +223,7 @@ def train(sess, config):
                 # gdm.summary, disc_summary, merged_summary = gdm.train(
                 #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
                 gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
+                    norm_frame(state_batch), action_batch, norm_frame(next_state_batch), warmup_bool)
 
                 writer.add_summary(gdm.summary, step)
                 writer.add_summary(disc_summary, step)

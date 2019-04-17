@@ -67,8 +67,8 @@ class GDMConfig(object):
 
 class RPConfig(object):
     rp_learn_start = 10000
-    rp_batch_size = 128 // 4 * 3
-    nonzero_batch_size = 128 // 4
+    rp_batch_size = 128 + 32
+    nonzero_batch_size = 128 - 32
     num_rewards = 3
     rp_weight_decay = 1e-4
 
