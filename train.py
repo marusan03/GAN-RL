@@ -244,7 +244,7 @@ def train(sess, config):
                         trajectories = gdm.get_state(
                             gan_obs_batch, np.expand_dims(gan_act_batch, axis=1))
                         gan_next_obs_batch = trajectories[:,
-                                                          -1*config.history_length:, ...]
+                                                          -config.history_length:, ...]
 
                         gan_obs_batch, gan_next_obs_batch = unnorm_frame(
                             gan_obs_batch), unnorm_frame(gan_next_obs_batch)
@@ -399,7 +399,6 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
-    # ここが微妙
     for i in range(config.lookahead):
         predicted_cum_return = config.discount * predicted_cum_return + \
             (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
@@ -409,7 +408,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     predicted_reward = np.argmax(
         predicted_cum_rew[max_idx, 0:config.num_rewards], axis=0) - 1
     return_action = int(tree_base[max_idx, 0])
-    # DQNがGANの不完全さを吸収するために必要?
+    # Dyna-Q
     if sample1 < epsiron:
         max_idx = random.randrange(leaves_size)
     obs = trajectories[max_idx, -config.history_length:, ...]
