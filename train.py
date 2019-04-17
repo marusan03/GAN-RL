@@ -181,7 +181,7 @@ def train(sess, config):
                 nonzero_rp_accuracy.append(int(predicted_reward == reward))
 
         # Train
-        if step > config.gan_learn_start and config.gats:    
+        if step > config.gan_learn_start and config.gats:
             if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
                 obs, act, rew = memory.reward_sample(
                     config.rp_batch_size)
@@ -203,7 +203,7 @@ def train(sess, config):
                 rp_summary = rp.train(
                     trajectories, act_batch, reward_label)
                 writer.add_summary(rp_summary, step)
-                
+
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 state_batch, action_batch, next_state_batch = memory.GAN_sample()
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample2(
@@ -242,7 +242,7 @@ def train(sess, config):
                         # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
                         #     config.batch_size)
                         trajectories = gdm.get_state(
-                            gan_obs_batch, np.expand_dims(act_batch, axis=1))
+                            gan_obs_batch, np.expand_dims(gan_act_batch, axis=1))
                         gan_next_obs_batch = trajectories[:,
                                                           -1*config.history_length:, ...]
 
@@ -412,7 +412,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     # DQNがGANの不完全さを吸収するために必要?
     if sample1 < epsiron:
         max_idx = random.randrange(leaves_size)
-    obs = trajectories[max_idx, -(config.history_length):, ...]
+    obs = trajectories[max_idx, -config.history_length:, ...]
     act_batch = np.squeeze(leaves_act_max[max_idx])
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
