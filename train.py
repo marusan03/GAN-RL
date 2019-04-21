@@ -54,8 +54,20 @@ def train(sess, config):
         step_assign_op = step_op.assign(step_input)
 
     with tf.variable_scope('summary'):
-        scalar_summary_tags = ['average.reward', 'average.loss', 'average.q value',
-                               'episode.max reward', 'episode.min reward', 'episode.avg reward', 'episode.num of game', 'training.learning_rate', 'rp.rp_accuracy', 'rp.nonzero_rp_accuracy', 'rp.nonzero_count']
+        scalar_summary_tags = [
+            'average.reward',
+            'average.loss',
+            'average.q value',
+            'episode.max reward',
+            'episode.min reward',
+            'episode.avg reward',
+            'episode.num of game',
+            'training.learning_rate',
+            'rp.rp_accuracy',
+            'rp.rp_plus_accuracy',
+            'rp.rp_minus_accuracy',
+            'rp.nonzero_rp_accuracy'
+            ]
 
         summary_placeholders = {}
         summary_ops = {}
@@ -123,8 +135,9 @@ def train(sess, config):
     max_avg_ep_reward = -100
     ep_rewards, actions = [], []
 
-    nonzero_count = 0
     rp_accuracy = []
+    rp_plus_accuracy = []
+    rp_minus_accuracy = []
     nonzero_rp_accuracy = []
 
     screen, reward, action, terminal = env.new_random_game()
@@ -141,11 +154,12 @@ def train(sess, config):
         if step == config.learn_start:
             num_game, update_count, ep_reward = 0, 0, 0.
             total_reward, total_loss, total_q_value = 0., 0., 0.
-            nonzero_count = 0
             ep_rewards, actions = [], []
 
         if step == config.gan_dqn_learn_start:
             rp_accuracy = []
+            rp_plus_accuracy = []
+            rp_minus_accuracy = []
             nonzero_rp_accuracy = []
 
         # ε-greedy
@@ -177,8 +191,11 @@ def train(sess, config):
         if MCTS_FLAG == True:
             rp_accuracy.append(int(predicted_reward == reward))
             if reward != 0:
-                nonzero_count += 1
                 nonzero_rp_accuracy.append(int(predicted_reward == reward))
+                if reward == 1:
+                    rp_plus_accuracy.append(int(predicted_reward == reward))
+                elif reward == -1:
+                    rp_minus_accuracy.append(int(predicted_reward == reward))
 
         # Train
         if step > config.gan_learn_start and config.gats:
@@ -329,11 +346,18 @@ def train(sess, config):
                 if step >= config.gan_dqn_learn_start:
                     if len(rp_accuracy) > 0:
                         rp_accuracy = np.mean(rp_accuracy)
+                        rp_plus_accuracy = np.mean(rp_plus_accuracy)
+                        rp_minus_accuracy = np.mean(rp_minus_accuracy)
                         nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
                     else:
-                        rp_accuracy, nonzero_rp_accuracy = 0, 0
+                        rp_accuracy = 0
+                        rp_plus_accuracy = 0
+                        rp_minus_accuracy = 0
+                        nonzero_rp_accuracy = 0
                 else:
                     rp_accuracy = 0
+                    rp_plus_accuracy = 0
+                    rp_minus_accuracy = 0
                     nonzero_rp_accuracy = 0
 
                 # summary
@@ -351,8 +375,9 @@ def train(sess, config):
                             'episode.rewards': ep_rewards,
                             'episode.actions': actions,
                             'rp.rp_accuracy': rp_accuracy,
-                            'rp.nonzero_rp_accuracy': nonzero_rp_accuracy,
-                            'rp.nonzero_count': nonzero_count
+                            'rp.rp_plus_accuracy': rp_plus_accuracy,
+                            'rp.rp_minus_accuracy': rp_minus_accuracy,
+                            'rp.nonzero_rp_accuracy': nonzero_rp_accuracy
                         },
                         step)
 
@@ -366,8 +391,9 @@ def train(sess, config):
                 actions = []
 
                 rp_accuracy = []
+                rp_plus_accuracy = []
+                rp_minus_accuracy = []
                 nonzero_rp_accuracy = []
-                nonzero_count = 0
 
 
 def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, step):
@@ -448,7 +474,7 @@ def save_model(sess, saver, checkpoint_dir, step=None):
 
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
-    saver.save(sess, checkpoint_dir+'model_', global_step=step)
+    saver.save(sess, checkpoint_dir+'model', global_step=step)
 
 
 def load_model(sess, saver, checkpoint_dir):
