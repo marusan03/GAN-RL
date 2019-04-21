@@ -438,7 +438,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     if sample1 < epsiron:
         max_idx = random.randrange(leaves_size)
     obs = trajectories[max_idx, -config.history_length:, ...]
-    act_batch = leaves_act_max[max_idx, 0]
+    act_batch = np.squeeze(leaves_act_max[max_idx])
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
