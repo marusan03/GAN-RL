@@ -406,9 +406,9 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
 
 def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
 
-    # sample1 = random.random()
-    # sample2 = random.random()
-    # epsiron = exploration.value(step)
+    sample1 = random.random()
+    sample2 = random.random()
+    epsiron = exploration.value(step)
 
     state = np.repeat(state, leaves_size, axis=0)
     action = tree_base
@@ -419,8 +419,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         np.max(leaves_q_value, axis=1)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
     # if sample2 < epsiron:
-    #     leaves_act_max = np.random.randint(
-    #         0, config.num_actions, leaves_act_max.shape)
+        leaves_act_max = np.random.randint(
+            0, config.num_actions, leaves_act_max.shape)
     reward_actions = np.concatenate(
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
@@ -435,8 +435,8 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         predicted_cum_rew[max_idx, 0:config.num_rewards], axis=0) - 1
     return_action = int(tree_base[max_idx, 0])
     # Dyna-Q
-    # if sample1 < epsiron:
-    #     max_idx = random.randrange(leaves_size)
+    if sample1 < epsiron:
+        max_idx = random.randrange(leaves_size)
     obs = trajectories[max_idx, -config.history_length:, ...]
     act_batch = leaves_act_max[max_idx, 0]
     rew_batch = np.argmax(
