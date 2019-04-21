@@ -68,7 +68,7 @@ class GDM():
         self.trajectories = self.pre_state
         with tf.variable_scope('gdm', reuse=True):
             self.state = norm_state_Q_GAN(self.build_gdm(
-                self.trajectories[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
+                self.trajectories[:, -self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
             self.trajectories = tf.concat(
                 [self.trajectories, self.state], axis=1)
 

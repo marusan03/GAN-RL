@@ -18,14 +18,14 @@ class GANReplayMemory(object):
         self.states = np.empty(
             (self.memory_size, self.history_length) + self.dims, dtype=np.float32)
         self.actions = np.empty([self.memory_size], dtype=np.uint8)
-        self.rewards = np.empty([self.memory_size], dtype=np.float32)
+        self.rewards = np.empty([self.memory_size], dtype=np.integer)
         self.terminals = np.full([self.batch_size], False)
         # pre-allocate prestates for minibatch
         self.prestates = np.empty(
             (self.batch_size, self.history_length) + self.dims, dtype=np.float32)
 
     def add_batch(self, frames, act, rew):
-        self.states[self.current] = frames
+        self.states[self.current, ...] = frames
         self.actions[self.current] = act
         self.rewards[self.current] = rew
 
@@ -60,7 +60,7 @@ class ReplayMemory:
         self.cnn_format = config.cnn_format
         self.memory_size = config.memory_size
         self.actions = np.empty(self.memory_size, dtype=np.uint8)
-        self.rewards = np.empty(self.memory_size, dtype=np.float32)
+        self.rewards = np.empty(self.memory_size, dtype=np.integer)
         self.screens = np.empty(
             (self.memory_size, config.screen_height, config.screen_width), dtype=np.uint8)
         self.terminals = np.empty(self.memory_size, dtype=np.bool)

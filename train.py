@@ -165,8 +165,8 @@ def train(sess, config):
 
         # GATS用?
         apply_action = action
-        if int(action != 0):
-            apply_action = action + 1
+        if int(apply_action != 0):
+            apply_action += 1
 
         # Observe
         screen, reward, terminal = env.act(apply_action, is_training=True)
@@ -380,29 +380,29 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
 
 def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
 
-    sample1 = random.random()
-    sample2 = random.random()
-    epsiron = exploration.value(step)
+    # sample1 = random.random()
+    # sample2 = random.random()
+    # epsiron = exploration.value(step)
 
     state = np.repeat(state, leaves_size, axis=0)
     action = tree_base
     trajectories = gdm.get_state(state, action)
     leaves_q_value = agent.get_q_value(
-        norm_frame_Q(unnorm_frame(trajectories[:, -1*config.history_length:, :, :])))
+        norm_frame_Q(unnorm_frame(trajectories[:, -config.history_length:, ...])))
     leaves_Q_max = (config.discount ** config.lookahead) * \
         np.max(leaves_q_value, axis=1)
     leaves_act_max = np.argmax(leaves_q_value, axis=1)
-    if sample2 < epsiron:
-        leaves_act_max = np.random.randint(
-            0, config.num_actions, leaves_act_max.shape)
+    # if sample2 < epsiron:
+    #     leaves_act_max = np.random.randint(
+    #         0, config.num_actions, leaves_act_max.shape)
     reward_actions = np.concatenate(
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
     predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
     predicted_cum_return = np.zeros(leaves_size)
     for i in range(config.lookahead):
         predicted_cum_return = config.discount * predicted_cum_return + \
-            (np.argmax(predicted_cum_rew[:, (i*config.num_rewards):(
-                (i+1)*config.num_rewards)], axis=1)-1.)
+            (np.argmax(predicted_cum_rew[:, ((config.lookahead-i-1)*config.num_rewards):(
+                (config.lookahead-i)*config.num_rewards)], axis=1)-1.)
     GATS_action = leaves_Q_max + predicted_cum_return
     max_idx = np.argmax(GATS_action, axis=0)
     predicted_reward = np.argmax(
@@ -412,9 +412,9 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     # if sample1 < epsiron:
     #     max_idx = random.randrange(leaves_size)
     obs = trajectories[max_idx, -config.history_length:, ...]
-    act_batch = np.squeeze(leaves_act_max[max_idx])
+    act_batch = leaves_act_max[max_idx, 0]
     rew_batch = np.argmax(
-        predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1.
+        predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
     gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action, predicted_reward
 

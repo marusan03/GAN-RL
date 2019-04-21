@@ -6,10 +6,6 @@ import tflib.nn.conv2d
 import numpy as np
 
 
-def norm_state_Q_GAN(state):
-    return np.clip(state, -1*127.5/130., 127.5/130.)
-
-
 class RP():
 
     def __init__(self, session, config, num_actions=18):
@@ -50,12 +46,12 @@ class RP():
 
     def get_reward(self, state, action):
         predicted_reward = self.sess.run(self.predicted_reward, feed_dict={
-            self.state: norm_state_Q_GAN(state), self.action: action})
+            self.state: state, self.action: action})
         return predicted_reward
 
     def train(self, state, action, reward):
         _, rp_summary = self.sess.run([self.rp_train_op, self.rp_summary], feed_dict={
-            self.state: norm_state_Q_GAN(state), self.action: action, self.reward: reward})
+            self.state: state, self.action: action, self.reward: reward})
         return rp_summary
 
     def build_rp(self, state, action):
