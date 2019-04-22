@@ -29,7 +29,7 @@ def norm_frame_Q(obs):
 
 
 def unnorm_frame(obs):
-    return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.int32)
+    return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.uint8)
 
 
 def train(sess, config):
@@ -168,14 +168,14 @@ def train(sess, config):
         if random.random() < epsilon:
             action = random.randrange(config.num_actions)
         else:
-            current_state = np.expand_dims(history.get(), axis=0)
+            current_state = norm_frame(np.expand_dims(history.get(), axis=0))
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action, predicted_reward = MCTS_planning(
-                    gdm, rp, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, gan_memory, step)
+                    gdm, rp, agent, current_state, leaves_size, tree_base, config, exploration, gan_memory, step)
                 MCTS_FLAG = True
             else:
                 action = agent.get_action(
-                    norm_frame_Q(current_state))
+                    norm_frame_Q(unnorm_frame(current_state)))
 
         # GATS用?
         apply_action = action
@@ -253,6 +253,7 @@ def train(sess, config):
                 # s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample(
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
+                s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
                 if config.gats == True:
                     if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                         gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
@@ -263,8 +264,8 @@ def train(sess, config):
                         gan_next_obs_batch = trajectories[:,
                                                           -config.history_length:, ...]
 
-                        gan_obs_batch, gan_next_obs_batch = unnorm_frame(
-                            gan_obs_batch), unnorm_frame(gan_next_obs_batch)
+                        gan_obs_batch, gan_next_obs_batch = \
+                            norm_frame(gan_obs_batch), norm_frame(gan_next_obs_batch)
 
                         s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
                         act_batch = np.concatenate(
@@ -276,7 +277,7 @@ def train(sess, config):
                         terminal_batch = np.concatenate(
                             [terminal_batch, gan_terminal_batch], axis=0)
 
-                s_t, s_t_plus_1 = norm_frame_Q(s_t), norm_frame_Q(s_t_plus_1)
+                s_t, s_t_plus_1 = norm_frame_Q(unnorm_frame(s_t)), norm_frame_Q(unnorm_frame(s_t_plus_1))
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
@@ -437,7 +438,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     # Dyna-Q
     if sample1 < epsiron:
         max_idx = random.randrange(leaves_size)
-    obs = trajectories[max_idx, -config.history_length:, ...]
+    obs = unnorm_frame(trajectories[max_idx, -config.history_length:, ...])
     act_batch = np.squeeze(leaves_act_max[max_idx])
     rew_batch = np.argmax(
         predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1

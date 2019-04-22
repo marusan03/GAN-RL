@@ -16,13 +16,13 @@ class GANReplayMemory(object):
         self.current = 0
 
         self.states = np.empty(
-            (self.memory_size, self.history_length) + self.dims, dtype=np.float32)
+            (self.memory_size, self.history_length) + self.dims, dtype=np.uint8)
         self.actions = np.empty([self.memory_size], dtype=np.uint8)
         self.rewards = np.empty([self.memory_size], dtype=np.integer)
         self.terminals = np.full([self.batch_size], False)
         # pre-allocate prestates for minibatch
         self.prestates = np.empty(
-            (self.batch_size, self.history_length) + self.dims, dtype=np.float32)
+            (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add_batch(self, frames, act, rew):
         self.states[self.current, ...] = frames
@@ -193,12 +193,12 @@ class ReplayMemory:
                 # sample one index (ignore states wraping over
                 # index = random.randint(
                 #     self.history_length, self.count - (1 + (self.lookahead - 1)))
-                if self.count < 60000:
-                    index = random.randint(
-                        self.history_length, self.count - (1 + (self.lookahead - 1)))
-                else:
-                    index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
-                        self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
+                # if self.count < 60000:
+                #     index = random.randint(
+                #         self.history_length, self.count - (1 + (self.lookahead - 1)))
+                # else:
+                index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
+                    self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
 
                 # if wraps over current pointer, then get new one
                 if index + (self.lookahead - 1) >= self.current and index - self.history_length < self.current:
