@@ -29,7 +29,7 @@ def norm_frame_Q(obs):
 
 
 def unnorm_frame(obs):
-    return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.uint8)
+    return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.int32)
 
 
 def train(sess, config):
@@ -259,13 +259,15 @@ def train(sess, config):
                         gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
                         # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
                         #     config.batch_size)
+                        gan_obs_batch = norm_frame(gan_obs_batch)
                         trajectories = gdm.get_state(
                             gan_obs_batch, np.expand_dims(gan_act_batch, axis=1))
                         gan_next_obs_batch = trajectories[:,
                                                           -config.history_length:, ...]
+                        assert np.any(-0.9807692307692307 <= gan_next_obs_batch <= 0.9807692307692307)
 
-                        gan_obs_batch, gan_next_obs_batch = \
-                            norm_frame(gan_obs_batch), norm_frame(gan_next_obs_batch)
+                        # gan_obs_batch, gan_next_obs_batch = \
+                        #     norm_frame(gan_obs_batch), norm_frame(gan_next_obs_batch)
 
                         s_t = np.concatenate([s_t, gan_obs_batch], axis=0)
                         act_batch = np.concatenate(
