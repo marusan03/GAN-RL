@@ -3,6 +3,7 @@ import shutil
 import random
 from tqdm import tqdm
 from PIL import Image
+from gym import wrappers
 
 import tensorflow as tf
 import numpy as np
@@ -31,8 +32,12 @@ def unnorm_frame(obs):
 def pray(sess, config):
 
     env = GymEnvironment(config)
+    if not os.path.exists('./video/'):
+        os.makedirs('./video/')
+    env = wrappers.Monitor(env, './video/', video_callable=(lambda ep: ep % 1 == 0))
 
     epsilon = 0.1
+    gan_epsilon = 0.01
 
     log_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
@@ -40,8 +45,6 @@ def pray(sess, config):
 
     # config.num_actions = env.action_size
     config.num_actions = 3
-
-    exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
 
     if config.gats == True:
         lookahead = config.lookahead
@@ -77,7 +80,7 @@ def pray(sess, config):
         history.add(screen)
 
     start_episode = 0
-    end_episode = 50
+    end_episode = 3
 
     # main
     for step in tqdm(range(start_episode, end_episode), ncols=70, initial=start_episode):
@@ -89,7 +92,7 @@ def pray(sess, config):
             current_state = np.expand_dims(history.get(), axis=0)
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action = MCTS_planning(
-                    gdm, agent, norm_frame(current_state), leaves_size, tree_base, config, exploration, step)
+                    gdm, agent, norm_frame(current_state), leaves_size, tree_base, config, gan_epsilon)
             else:
                 action = agent.get_action(
                     norm_frame_Q(current_state))
@@ -109,10 +112,10 @@ def pray(sess, config):
             screen, reward, action, terminal = env.new_game()
 
 
-def MCTS_planning(gdm, agent, state, leaves_size, tree_base, config, exploration, step):
+def MCTS_planning(gdm, agent, state, leaves_size, tree_base, config, gan_epsilon):
 
     sample = random.random()
-    epsiron = exploration.value(step)
+    epsiron = gan_epsilon
 
     state = np.repeat(state, leaves_size, axis=0)
     action = tree_base
