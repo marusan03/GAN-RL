@@ -29,7 +29,7 @@ def unnorm_frame(obs):
     return np.clip(obs * 130. + 127.5, 0., 255.).astype(np.int32)
 
 
-def pray(sess, config):
+def play(sess, config):
 
     env = GymEnvironment(config)
     if not os.path.exists('./video/'):

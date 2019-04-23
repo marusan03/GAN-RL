@@ -1,11 +1,14 @@
 import random
 import pprint
 
+from test import play
+from train import train
+from config import get_config
+
 import tensorflow as tf
 import numpy as np
 
-from train import train
-from config import get_config
+
 
 pp = pprint.PrettyPrinter().pprint
 flags = tf.app.flags
