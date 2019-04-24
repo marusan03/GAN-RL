@@ -34,6 +34,8 @@ class AgentConfig(object):
 
     num_actions = 18
 
+    is_train = None
+
 
 class EnvironmentConfig(object):
     env_name = 'PongNoFrameskip-v4'
