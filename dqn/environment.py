@@ -14,7 +14,7 @@ class Environment(object):
         if config.is_train == False:
             if not os.path.exists('./video/'):
                 os.makedirs('./video/')
-            env = wrappers.Monitor(env, './video/', video_callable=(lambda ep: ep % 1 == 0))
+            self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 1 == 0))
         self.env = self.env.unwrapped
 
         screen_width, screen_height, self.action_repeat, self.random_start = \
