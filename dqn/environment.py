@@ -1,4 +1,6 @@
+import os
 import gym
+from gym import wrappers
 import random
 import numpy as np
 from PIL import Image
@@ -9,6 +11,10 @@ from collections import deque
 class Environment(object):
     def __init__(self, config):
         self.env = gym.make(config.env_name)
+        if config.is_train == False:
+            if not os.path.exists('./video/'):
+                os.makedirs('./video/')
+            env = wrappers.Monitor(env, './video/', video_callable=(lambda ep: ep % 1 == 0))
         self.env = self.env.unwrapped
 
         screen_width, screen_height, self.action_repeat, self.random_start = \
