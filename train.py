@@ -264,8 +264,6 @@ def train(sess, config):
                             gan_obs_batch, np.expand_dims(gan_act_batch, axis=1))
                         gan_next_obs_batch = trajectories[:,
                                                           -config.history_length:, ...]
-                        assert np.any(-0.9807692307692307 <= gan_next_obs_batch)
-                        assert np.any(gan_next_obs_batch <= 0.9807692307692307)
 
                         # gan_obs_batch, gan_next_obs_batch = \
                         #     norm_frame(gan_obs_batch), norm_frame(gan_next_obs_batch)
