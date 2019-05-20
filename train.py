@@ -63,6 +63,9 @@ def train(sess, config):
             'episode.max reward',
             'episode.min reward',
             'episode.avg reward',
+            'eval_episode.max reward',
+            'eval_episode.min reward',
+            'eval_episode.avg reward',
             'episode.num of game',
             'eval.episode.num of game',
             'training.learning_rate',
@@ -140,6 +143,7 @@ def train(sess, config):
     ep_rewards, actions = [], []
 
     eval_ep_reward, eval_num_game, eval_total_reward = 0, 0, 0.
+    eval_ep_rewards = []
 
     nonzero_count = 0
     rp_accuracy = []
@@ -165,9 +169,12 @@ def train(sess, config):
             num_game, update_count, ep_reward = 0, 0, 0.
             total_reward, total_loss, total_q_value = 0., 0., 0.
 
-            eval_ep_reward, eval_num_game, eval_total_reward = 0, 0, 0.
             nonzero_count = 0
             ep_rewards, actions = [], []
+
+            eval_ep_reward, eval_num_game, eval_total_reward = 0, 0, 0.
+            eval_ep_rewards = []
+
 
         if step == config.gan_dqn_learn_start:
             rp_accuracy = []
@@ -330,6 +337,7 @@ def train(sess, config):
             eval_screen, eval_reward, eval_action, eval_terminal = eval_env.new_random_game()
 
             eval_num_game += 1
+            eval_ep_rewards.append(eval_ep_reward)
             eval_ep_reward = 0.
         else:
             eval_ep_reward += reward
@@ -366,11 +374,16 @@ def train(sess, config):
                     max_ep_reward = np.max(ep_rewards)
                     min_ep_reward = np.min(ep_rewards)
                     avg_ep_reward = np.mean(ep_rewards)
+
+                    eval_max_ep_reward = np.max(eval_ep_rewards)
+                    eval_min_ep_reward = np.min(eval_ep_rewards)
+                    eval_avg_ep_reward = np.mean(eval_ep_rewards)
                 except:
                     max_ep_reward, min_ep_reward, avg_ep_reward = 0, 0, 0
+                    eval_max_ep_reward, eval_min_ep_reward, eval_avg_ep_reward = 0, 0, 0
 
                 print('\navg_r: %.4f, avg_l: %.6f, avg_q: %3.6f, avg_ep_r: %.4f, max_ep_r: %.4f, min_ep_r: %.4f, # game: %d'
-                      % (avg_reward, avg_loss, avg_q, avg_ep_reward, max_ep_reward, min_ep_reward, num_game))
+                      % (avg_reward, avg_loss, avg_q, eval_avg_ep_reward, eval_max_ep_reward, eval_min_ep_reward, eval_num_game))
 
                 # require terget q network
                 if max_avg_ep_reward * 0.9 <= avg_ep_reward:
@@ -409,6 +422,9 @@ def train(sess, config):
                             'episode.max reward': max_ep_reward,
                             'episode.min reward': min_ep_reward,
                             'episode.avg reward': avg_ep_reward,
+                            'eval_episode.max reward': eval_max_ep_reward,
+                            'eval_episode.min reward': eval_min_ep_reward,
+                            'eval_episode.avg reward': eval_avg_ep_reward,
                             'episode.num of game': num_game,
                             'eval.episode.num of game': eval_num_game,
                             'episode.rewards': ep_rewards,
@@ -431,6 +447,7 @@ def train(sess, config):
 
                 eval_num_game = 0
                 eval_total_reward = 0.
+                ep_rewards = []
                 rp_accuracy = []
                 rp_plus_accuracy = []
                 rp_minus_accuracy = []
