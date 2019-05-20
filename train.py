@@ -137,7 +137,7 @@ def train(sess, config):
     max_avg_ep_reward = -100
     ep_rewards, actions = [], []
 
-    eval_ep_reward, eval_num_game, eval_total_reward = 0, 0.
+    eval_ep_reward, eval_num_game, eval_total_reward = 0, 0, 0.
 
     nonzero_count = 0
     rp_accuracy = []
