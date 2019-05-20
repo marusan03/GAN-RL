@@ -16,16 +16,16 @@ class GANReplayMemory(object):
         self.current = 0
 
         self.states = np.empty(
-            (self.memory_size, self.history_length) + self.dims, dtype=np.float32)
+            (self.memory_size, self.history_length) + self.dims, dtype=np.uint8)
         self.actions = np.empty([self.memory_size], dtype=np.uint8)
         self.rewards = np.empty([self.memory_size], dtype=np.integer)
         self.terminals = np.full([self.batch_size], False)
         # pre-allocate prestates for minibatch
         self.prestates = np.empty(
-            (self.batch_size, self.history_length) + self.dims, dtype=np.float32)
+            (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add_batch(self, frames, act, rew):
-        self.states[self.current] = frames
+        self.states[self.current, ...] = frames
         self.actions[self.current] = act
         self.rewards[self.current] = rew
 
@@ -69,6 +69,7 @@ class ReplayMemory:
         self.batch_size = config.batch_size
         self.gan_batch_size = config.gan_batch_size
         self.rp_batch_size = config.rp_batch_size
+        self.nonzero_batch_size = config.nonzero_batch_size
         self.lookahead = config.lookahead
         self.count = 0
         self.current = 0
@@ -85,6 +86,8 @@ class ReplayMemory:
             (self.gan_batch_size, self.history_length + self.lookahead) + self.dims, dtype=np.uint8)
         self.reward_states = np.empty(
             (self.rp_batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.nonzero_states = np.empty(
+            (self.nonzero_batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add(self, screen, reward, action, terminal):
         assert screen.shape == self.dims
@@ -188,8 +191,15 @@ class ReplayMemory:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
-                index = random.randint(
-                    self.history_length + self.lookahead, self.count - (1 + self.lookahead))
+                # index = random.randint(
+                #     self.history_length, self.count - (1 + (self.lookahead - 1)))
+                # if self.count < 60000:
+                #     index = random.randint(
+                #         self.history_length, self.count - (1 + (self.lookahead - 1)))
+                # else:
+                index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
+                    self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
+
                 # if wraps over current pointer, then get new one
                 if index + (self.lookahead - 1) >= self.current and index - self.history_length < self.current:
                     continue
@@ -215,11 +225,14 @@ class ReplayMemory:
         else:
             return self.gan_states[:, :self.history_length, ...], actions, self.gan_states[:, self.history_length:, ...]
 
-    def reward_sample(self, nonzero=False):
-        assert self.count > self.rp_batch_size
+    def reward_sample(self, batch_size, nonzero=False):
+        assert self.count > batch_size
 
         indexes = []
-        while len(indexes) < self.rp_batch_size:
+        missing_context = 0
+        missing_context_index = 0
+        missing_context_indexes = []
+        while len(indexes) < batch_size:
             # find random index
             while True:
                 # sample one index (ignore states wraping over
@@ -233,24 +246,43 @@ class ReplayMemory:
                 else:
                     if self.count < 60000:
                         index = random.randint(
-                            self.history_length + self.lookahead, self.count - (1 + (self.lookahead + 1)))
+                            self.history_length + self.lookahead, self.count - (1 + self.lookahead))
                     else:
-                        index = (self.current-random.randint(self.lookahead+self.history_length,
+                        index = (self.current-random.randint(self.history_length,
                                                              60000)) % (self.count-self.lookahead-self.history_length)
-                        if 0 > index:
-                            index += self.count
+                    #     if 0 > index:
+                    #         index += self.count
+                    # if nonzero == False and ((index in self.nonzero_rewards) or (index + 1 in self.nonzero_rewards)):
+                    #     continue
+
                 # if wraps over current pointer, then get new one
                 if index - 1 >= self.current and index - self.history_length < self.current:
                     continue
                 # if wraps over episode end, then get new one
                 # NB! poststate (last screen) can be terminal state!
-                if self.terminals[(index - self.history_length):index + self.lookahead].any():
+                if self.terminals[(index - self.history_length):index - 1].any():
+                #     missing_context_index = np.where(
+                #         self.terminals[(index - self.history_length):index - 1] == True)
+                #     missing_context = self.history_length - index - missing_context_index
+                #     break
                     continue
                 # otherwise use this index
                 break
 
             # NB! having index first is fastest in C-order matrices
-            self.reward_states[len(indexes), ...] = self.getState(index - 1)
+            if missing_context_index > 0:
+                buf_state = self.getState(index - 1)
+                buf_state[: missing_context] = np.repeat(
+                    buf_state[missing_context + 1: ...], missing_context, 0)
+                self.reward_states[len(indexes), ...] = buf_state
+                missing_context_indexes.append(index)
+            else:
+                if nonzero == False:
+                    self.reward_states[len(indexes), ...] = self.getState(
+                        index - 1)
+                else:
+                    self.nonzero_states[len(indexes), ...] = self.getState(
+                        index - 1)
             indexes.append(index)
 
         actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
@@ -259,43 +291,54 @@ class ReplayMemory:
             print(rewards)
 
         if self.cnn_format == 'NHWC':
-            return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
+            if nonzero == False:
+                return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
+            else:
+                return np.transpose(self.nonzero_states, (0, 2, 3, 1)), actions, rewards
         else:
-            return self.reward_states, actions, rewards
+            if nonzero == False:
+                return self.reward_states, actions, rewards
+            else:
+                return self.nonzero_states, actions, rewards
 
     def can_sample(self, batch_size):
         return batch_size + 1 <= self.count
 
 
-if __name__ == "__main__":
-    class config():
-        cnn_format = 'NCHW'
-        memory_size = 100000
-        batch_size = 5
-        gan_batch_size = 5
-        rp_batch_size = 5
-        lookahead = 1
-        history_length = 4
-        screen_height = 1
-        screen_width = 1
-    config = config()
-    model_dir = ""
-    test_memory = ReplayMemory(config, model_dir)
-    test_data = np.arange(1, 101)
-    test_memory.actions[0: 100] = test_data
-    test_memory.rewards[0: 100] = test_data
-    test_memory.screens[0: 100, ...] = np.repeat(
-        test_data, 1**2).reshape([100, 1, 1])
-    # print(test_memory.rewards)
-    # print(test_memory.actions)
-    test_memory.count = 100
-    test_memory.current = 100
-    # pre, act, cur = test_memory.GAN_sample()
-    # print(pre.reshape([-1]))
-    # print(act.reshape([-1]))
-    # print(cur.reshape([-1]))
-    ste, act, rew, ste2, _ = test_memory.sample()
-    print(ste.reshape([-1]))
-    print(act.reshape([-1]))
-    print(rew.reshape([-1]))
-    print(ste2.reshape([-1]))
+# def test_dqn_replay_memory():
+#     class config():
+#         cnn_format = 'NCHW'
+#         memory_size = 100
+#         batch_size = 5
+#         gan_batch_size = 5
+#         rp_batch_size = 5
+#         lookahead = 1
+#         history_length = 4
+#         screen_height = 1
+#         screen_width = 1
+#     config = config()
+#     model_dir = ""
+#     test_memory = ReplayMemory(config, model_dir)
+#     test_data = np.arange(1, 101)
+#     test_memory.actions[0: 100] = test_data
+#     test_memory.rewards[0: 100] = test_data
+#     test_memory.screens[0: 100, ...] = np.repeat(
+#         test_data, 1**2).reshape([100, 1, 1])
+#     # print(test_memory.rewards)
+#     # print(test_memory.actions)
+#     test_memory.count = 100
+#     test_memory.current = random.randint(0, 100)
+
+#     pre, act, rew, post, _ = test_memory.sample()
+#     pre_index = pre[]
+
+#     assert pre == np.arange(
+#         pre_index - 4, pre_index), "{},{}".format(pre, np.arange(pre_index - 4, pre_index))
+#     assert act == pre_index + 1
+#     assert rew == pre_index + 1
+#     assert post == pre_index
+
+
+# if __name__ == "__main__":
+
+#     test_dqn_replay_memory()

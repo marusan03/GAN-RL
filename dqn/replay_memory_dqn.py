@@ -5,7 +5,7 @@ import random
 import logging
 import numpy as np
 
-from .utils import save_npy, load_npy
+# from .utils import save_npy, load_npy
 
 
 def sample_n_unique(sampling_f, n):
@@ -419,3 +419,41 @@ class ReplayMemory:
             zip(['actions', 'rewards', 'screens', 'terminals', 'prestates', 'poststates'],
                 [self.actions, self.rewards, self.screens, self.terminals, self.prestates, self.poststates])):
             array = load_npy(os.path.join(self.model_dir, name))
+
+
+if __name__ == "__main__":
+    class config():
+        cnn_format = 'NCHW'
+        memory_size = 100000
+        batch_size = 5
+        gan_batch_size = 5
+        rp_batch_size = 5
+        lookahead = 1
+        history_length = 4
+        screen_height = 1
+        screen_width = 1
+    config = config()
+    model_dir = ""
+    test_memory = ReplayMemory(config, model_dir)
+    test_data = np.arange(1, 101)
+    test_memory.actions[0: 100] = test_data
+    test_memory.rewards[0: 100] = test_data
+    test_memory.screens[0: 100, ...] = np.repeat(
+        test_data, 1**2).reshape([100, 1, 1])
+    # print(test_memory.rewards)
+    # print(test_memory.actions)
+    test_memory.current = 100
+    test_memory.count = 100
+    # pre, act, cur = test_memory.GAN_sample()
+    # print(pre.reshape([-1]))
+    # print(act.reshape([-1]))
+    # print(cur.reshape([-1]))
+    obs, act, nex = test_memory.GAN_sample2(5, 1)
+    print(obs.reshape([-1]))
+    print(act.reshape([-1]))
+    print(nex.reshape([-1]))
+
+    obs, act, rew = test_memory.reward_sample2(5, 1)
+    print(obs.reshape([-1]))
+    print(act.reshape([-1]))
+    print(rew.reshape([-1]))

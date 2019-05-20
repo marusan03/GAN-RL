@@ -114,7 +114,7 @@ class Agent():
             return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
 
         # If you use RMSpropGraves, this code is tf.reduce_sum(). But it is not Implemented.
-        loss = tf.reduce_sum(clipped_error(delta), name='loss')
+        loss = tf.reduce_mean(clipped_error(delta), name='loss')
 
         dqn_summary = tf.summary.scalar('dqn_loss', loss)
 
@@ -129,7 +129,7 @@ class Agent():
                                           staircase=True))
 
         dqn_op = tf.train.RMSPropOptimizer(
-            learning_rate_op, decay=0.95, momentum=0.95, epsilon=0.01).minimize(loss)
+            learning_rate_op, decay=0.90, momentum=0.95, epsilon=0.01).minimize(loss)
         return dqn_op, loss, dqn_summary
 
     def build_model(self, state):

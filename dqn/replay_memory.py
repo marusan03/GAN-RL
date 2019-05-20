@@ -63,10 +63,14 @@ class ReplayMemory(object):
         self.nonzero_rewards = []
         self.overwrite_idx = None
 
-        self.obs = None
-        self.action = None
-        self.reward = None
-        self.done = None
+        self.obs = np.empty(
+            [self.size, 1, config.screen_height, config.screen_width], dtype=np.uint8)
+        self.action = np.empty([self.size],
+                               dtype=np.int32)
+        self.reward = np.empty([self.size],
+                               dtype=np.float32)
+        self.done = np.empty([self.size],
+                             dtype=np.bool)
 
     def can_sample(self, batch_size):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
@@ -239,16 +243,6 @@ class ReplayMemory(object):
             # transpose image frame into (img_c, img_h, img_w)
             frame = frame.reshape([1, img_h, img_w])
 
-        if self.obs is None:
-            self.obs = np.empty(
-                [self.size] + list(frame.shape), dtype=np.uint8)
-            self.action = np.empty([self.size],
-                                   dtype=np.int32)
-            self.reward = np.empty([self.size],
-                                   dtype=np.float32)
-            self.done = np.empty([self.size],
-                                 dtype=np.bool)
-
         self.obs[self.next_idx] = frame
         self.action[self.next_idx] = action
         self.reward[self.next_idx] = reward
@@ -271,3 +265,41 @@ class ReplayMemory(object):
 
         self.next_idx = (self.next_idx + 1) % self.size
         self.num_in_buffer = min(self.size, self.num_in_buffer + 1)
+
+
+if __name__ == "__main__":
+    class config():
+        cnn_format = 'NCHW'
+        memory_size = 100000
+        batch_size = 5
+        gan_batch_size = 5
+        rp_batch_size = 5
+        lookahead = 1
+        history_length = 4
+        screen_height = 1
+        screen_width = 1
+    config = config()
+    test_memory = ReplayMemory(config)
+    test_data = np.arange(1, 101)
+    test_memory.action[0: 100] = test_data
+    test_memory.reward[0: 100] = test_data
+    test_memory.obs[0: 100, ...] = np.repeat(
+        test_data, 1**2).reshape([100, 1, 1, 1])
+    # print(test_memory.rewards)
+    # print(test_memory.actions)
+    test_memory.num_in_buffer = 100
+    test_memory.next_idx = 100
+    pre, act, rew, nex, _ = test_memory.sample(5, 1)
+    print(pre.reshape([-1]))
+    print(act.reshape([-1]))
+    print(rew.reshape([-1]))
+    print(nex.reshape([-1]))
+    obs, act, nex = test_memory.GAN_sample(5, 1)
+    print(obs.reshape([-1]))
+    print(act.reshape([-1]))
+    print(nex.reshape([-1]))
+
+    obs, act, rew = test_memory.reward_sample(5, 1)
+    print(obs.reshape([-1]))
+    print(act.reshape([-1]))
+    print(rew.reshape([-1]))

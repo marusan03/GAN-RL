@@ -34,6 +34,8 @@ class AgentConfig(object):
 
     num_actions = 18
 
+    is_train = None
+
 
 class EnvironmentConfig(object):
     env_name = 'PongNoFrameskip-v4'
@@ -49,7 +51,7 @@ class EnvironmentConfig(object):
 class GDMConfig(object):
     gan_memory_size = 10000
     gan_learn_start = 10000
-    gan_dqn_learn_start = 1000000
+    gan_dqn_learn_start = 200000
     gan_warmup = 5000
     gan_batch_size = 128
     lookahead = 1
@@ -67,7 +69,8 @@ class GDMConfig(object):
 
 class RPConfig(object):
     rp_learn_start = 10000
-    rp_batch_size = 128
+    rp_batch_size = 128 + 32
+    nonzero_batch_size = 128 - 32
     num_rewards = 3
     rp_weight_decay = 1e-4
 
