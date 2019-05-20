@@ -9,8 +9,8 @@ import numpy as np
 
 from dqn.environment import GymEnvironment
 # from dqn.replay_memory import ReplayMemory, GANReplayMemory
-# from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
-from dqn.replay_memory_test import ReplayMemory, GANReplayMemory
+from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
+# from dqn.replay_memory_test import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
