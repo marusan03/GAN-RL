@@ -220,11 +220,11 @@ def train(sess, config):
         # Train
         if step > config.gan_learn_start and config.gats:
             if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
-                obs, act, rew = memory.reward_sample()
+                obs, act, rew = memory.reward_sample(config.rp_batch_size)
                 # obs, act, rew = memory.reward_sample2(
                 #     config.rp_batch_size, config.lookahead)
                 reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    nonzero=True)
+                    config.nonzero_batch_size, nonzero=True)
                 # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
                 #     config.rp_batch_size, config.lookahead)
                 obs_batch = norm_frame(
