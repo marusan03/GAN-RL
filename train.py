@@ -340,7 +340,7 @@ def train(sess, config):
             eval_ep_rewards.append(eval_ep_reward)
             eval_ep_reward = 0.
         else:
-            eval_ep_reward += reward
+            eval_ep_reward += eval_reward
 
         eval_total_reward += eval_reward
 
