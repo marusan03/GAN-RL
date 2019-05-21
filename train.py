@@ -84,7 +84,7 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.scalar(
                 "%s-%s/%s" % (config.env_name, config.env_type, tag), summary_placeholders[tag])
 
-        histogram_summary_tags = ['episode.rewards', 'episode.actions']
+        histogram_summary_tags = ['episode.rewards', 'eval.episode.rewards', 'episode.actions']
 
         for tag in histogram_summary_tags:
             summary_placeholders[tag] = tf.placeholder(
@@ -276,8 +276,6 @@ def train(sess, config):
                 gdm.summary, disc_summary = gdm.train(
                     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
 
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
                 gen_step += 1
 
         if step > config.learn_start:
@@ -364,6 +362,9 @@ def train(sess, config):
         if step >= config.learn_start:
             if step % config._test_step == config._test_step - 1:
 
+                writer.add_summary(gdm.summary, step)
+                writer.add_summary(disc_summary, step)
+
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
                 avg_q = total_q_value / update_count
@@ -428,6 +429,7 @@ def train(sess, config):
                             'episode.num of game': num_game,
                             'eval.episode.num of game': eval_num_game,
                             'episode.rewards': ep_rewards,
+                            'eval.episode.rewards': eval_ep_rewards,
                             'episode.actions': actions,
                             'rp.rp_accuracy': rp_accuracy,
                             'rp.rp_plus_accuracy': rp_plus_accuracy,
@@ -447,7 +449,7 @@ def train(sess, config):
 
                 eval_num_game = 0
                 eval_total_reward = 0.
-                ep_rewards = []
+                eval_ep_rewards = []
                 rp_accuracy = []
                 rp_plus_accuracy = []
                 rp_minus_accuracy = []
