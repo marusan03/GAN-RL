@@ -332,6 +332,8 @@ class GDM():
 
         with tf.variable_scope('gdm', reuse=True):
             for i in range(self.lookahead):
+                print(fake_state[:, -self.history_length:-1, ...].shape)
+                print(real_state[:, self.history_length+i-1:-self.history_length+i, ...].shape)
                 fake_state = tf.cond(
                     self.warmup[i],
                     lambda: tf.concat(
@@ -353,7 +355,6 @@ class GDM():
                                 ],
                                 axis=1)
                             )
-                print(fake_state.shape)
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
