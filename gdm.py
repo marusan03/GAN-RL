@@ -44,7 +44,7 @@ class GDM():
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
-        self.rollout_actiontf.placeholder(
+        self.rollout_action = tf.placeholder(
             tf.int32, shape=[None, 1], name='rollout_actions')
         self.is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
