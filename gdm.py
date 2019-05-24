@@ -328,23 +328,22 @@ class GDM():
         real_state = tf.concat(
             [self.pre_state, self.post_state], axis=self.concat_dim, name='real_state')
 
-        fake_state = tf.concat([self.pre_state, self.predicted_state], axis=1)
-
         fake_state = self.pre_state
+
         with tf.variable_scope('gdm', reuse=True):
-            for i in range(0, self.lookahead-1):
+            for i in range(self.lookahead):
                 fake_state = tf.cond(
                     self.warmup[i],
-                    lambda fake_state: tf.concat(
+                    lambda : tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
-                                tf.concat([fake_state[:, -self.history_length:-1, ...], self.post_state[:, i:i+1, ...]], axis=1),
+                                tf.concat([fake_state[:, -self.history_length:-1, ...], real_state[:, self.history_length+i-1:-self.history_length+i, ...]], axis=1),
                                 tf.expand_dims(self.action[:, i],axis=1),
                                 self.is_training,
                                 ngf=self.gdm_ngf))
                                 ],
                                 axis=1),
-                    lambda fake_state: tf.concat(
+                    lambda : tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
                                     fake_state[:, -self.history_length:, ...],
