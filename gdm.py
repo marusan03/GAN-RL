@@ -334,7 +334,7 @@ class GDM():
             for i in range(self.lookahead):
                 fake_state = tf.cond(
                     self.warmup[i],
-                    lambda : tf.concat(
+                    lambda: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
                                 tf.concat([fake_state[:, -self.history_length:-1, ...], real_state[:, self.history_length+i-1:-self.history_length+i, ...]], axis=1),
@@ -343,7 +343,7 @@ class GDM():
                                 ngf=self.gdm_ngf))
                                 ],
                                 axis=1),
-                    lambda : tf.concat(
+                    lambda: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
                                     fake_state[:, -self.history_length:, ...],
@@ -353,6 +353,7 @@ class GDM():
                                 ],
                                 axis=1)
                             )
+                print(fake_state.shape)
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
