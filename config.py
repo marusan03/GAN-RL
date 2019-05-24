@@ -63,6 +63,7 @@ class GDMConfig(object):
     gdm_weight_decay = 1e-3
     disc_weight_decay = 0.1
     gats = True
+    dyna = False
     rollout_frequency = 50000
     gif = True
 

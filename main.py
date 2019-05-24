@@ -20,8 +20,9 @@ flags.DEFINE_string('model', 'm1', 'Type of model')
 flags.DEFINE_boolean('dueling', False, 'Whether to use dueling deep q-network')
 flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
 
-# GDM
-flags.DEFINE_boolean('gats', True, 'Use GDM')
+# GATS
+flags.DEFINE_boolean('gats', False, 'Use GDM')
+flags.DEFINE_boolean('dyna', False, 'Whether to use dyna-Q')
 flags.DEFINE_integer('lookahead', 1, 'The number of lookahead. int[1-4]')
 
 # Environment

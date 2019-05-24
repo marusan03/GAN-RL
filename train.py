@@ -93,10 +93,11 @@ def train(sess, config):
         lookahead = config.lookahead
         rp_train_frequency = 4
         gdm_train_frequency = 4
-        gan_memory = GANReplayMemory(config)
         gdm = GDM(sess, config, num_actions=config.num_actions)
         rp = RP(sess, config, num_actions=config.num_actions)
         leaves_size = config.num_actions**config.lookahead
+        if config.dyna == True:
+            gan_memory = GANReplayMemory(config)
 
         def base_generator():
             tree_base = np.zeros((leaves_size, lookahead)).astype('uint8')
@@ -166,7 +167,7 @@ def train(sess, config):
             current_state = norm_frame(np.expand_dims(history.get(), axis=0))
             if config.gats and (step >= config.gan_dqn_learn_start):
                 action, predicted_reward = MCTS_planning(
-                    gdm, rp, agent, current_state, leaves_size, tree_base, config, exploration, gan_memory, step)
+                    gdm, rp, agent, current_state, leaves_size, tree_base, config, exploration, step, gan_memory)
                 MCTS_FLAG = True
             else:
                 action = agent.get_action(
@@ -233,7 +234,7 @@ def train(sess, config):
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
                 s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
-                if config.gats == True:
+                if config.gats == True and config.dyna == True:
                     if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                         gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
                         # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
@@ -389,7 +390,7 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
         writer.add_summary(summary_str, step)
 
 
-def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, gan_memory, step):
+def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, step, gan_memory=None):
 
     sample1 = random.random()
     sample2 = random.random()
@@ -420,13 +421,14 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         predicted_cum_rew[max_idx, 0:config.num_rewards], axis=0) - 1
     return_action = int(tree_base[max_idx, 0])
     # Dyna-Q
-    if sample1 < epsiron:
-        max_idx = random.randrange(leaves_size)
-    obs = unnorm_frame(trajectories[max_idx, -config.history_length:, ...])
-    act_batch = np.squeeze(leaves_act_max[max_idx])
-    rew_batch = np.argmax(
-        predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
-    gan_memory.add_batch(obs, act_batch, rew_batch)
+    if not gan_memory:
+        if sample1 < epsiron:
+            max_idx = random.randrange(leaves_size)
+        obs = unnorm_frame(trajectories[max_idx, -config.history_length:, ...])
+        act_batch = np.squeeze(leaves_act_max[max_idx])
+        rew_batch = np.argmax(
+            predicted_cum_rew[max_idx, -config.num_rewards:], axis=0) - 1
+        gan_memory.add_batch(obs, act_batch, rew_batch)
     return return_action, predicted_reward
 
 
