@@ -423,7 +423,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         predicted_cum_rew[max_idx, 0:config.num_rewards], axis=0) - 1
     return_action = int(tree_base[max_idx, 0])
     # Dyna-Q
-    if not gan_memory:
+    if gan_memory:
         if sample1 < epsiron:
             max_idx = random.randrange(leaves_size)
         obs = unnorm_frame(trajectories[max_idx, -config.history_length:, ...])
