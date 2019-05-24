@@ -337,7 +337,7 @@ class GDM():
                     lambda: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
-                                tf.concat(fake_state[:, -self.history_length:-1, ...], self.post_state[:, i, ...]),
+                                tf.concat(fake_state[:, -self.history_length:-1, ...], self.post_state[:, i:i+1, ...]),
                                 tf.expand_dims(self.action[:, i],axis=1),
                                 self.is_training,
                                 ngf=self.gdm_ngf))
