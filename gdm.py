@@ -69,7 +69,7 @@ class GDM():
 
         with tf.variable_scope('gdm'):
             self.predicted_state = norm_state_Q_GAN(self.build_gdm(
-                self.pre_state, tf.expand_dims(self.action, axis=1), self.is_training, ngf=self.gdm_ngf))
+                self.pre_state, tf.expand_dims(self.actions[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
 
         self.trajectories = self.pre_state
         with tf.variable_scope('gdm', reuse=True):
@@ -90,9 +90,9 @@ class GDM():
 
     def rollout(self, states, actions, num_rollout):
         for i in range(num_rollout):
-            action = [[actions[i]]]
+            action = [[actions[i:i+1+self.lookahead]]]
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
-                self.pre_state: states[:, -self.history_length:, ...], self.action: action, self.is_training: False})
+                self.pre_state: states[:, -self.history_length:, ...], self.actions: action, self.is_training: False})
             states = np.concatenate([states, predicted_state], axis=1)
         return np.squeeze(states)
 
