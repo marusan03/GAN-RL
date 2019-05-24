@@ -69,12 +69,13 @@ class GDM():
             self.predicted_state = norm_state_Q_GAN(self.build_gdm(
                 self.pre_state, tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
 
-        self.trajectories = self.pre_state
+        self.trajectories = tf.concat([self.pre_state, self.predicted_state], axis=1)
         with tf.variable_scope('gdm', reuse=True):
-            self.state = norm_state_Q_GAN(self.build_gdm(
-                self.trajectories[:, -self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
-            self.trajectories = tf.concat(
-                [self.trajectories, self.state], axis=1)
+            for _ in range(self.lookahead-1):
+                self.state = norm_state_Q_GAN(self.build_gdm(
+                    self.trajectories[:, -self.history_length:, ...], tf.expand_dims(self.action[:, 0], axis=1), self.is_training, ngf=self.gdm_ngf))
+                self.trajectories = tf.concat(
+                    [self.trajectories, self.state], axis=1)
 
         with tf.name_scope('opt'):
             # self.gdm_train_op, self.disc_train_op, self.gdm_summary, self.disc_summary, self.merged_summary = self.build_training_op()
@@ -327,11 +328,11 @@ class GDM():
         real_state = tf.concat(
             [self.pre_state, self.post_state], axis=self.concat_dim, name='real_state')
 
-        fake_state = self.trajectories
+        fake_state = tf.concat([self.pre_state, self.predicted_state], axis=1)
 
         fake_state = self.pre_state
         with tf.variable_scope('gdm', reuse=True):
-            for i in range(0, self.lookahead):
+            for i in range(0, self.lookahead-1):
                 fake_state = tf.cond(
                     self.warmup[i],
                     lambda: tf.concat(
