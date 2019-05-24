@@ -9,8 +9,8 @@ import numpy as np
 
 from dqn.environment import GymEnvironment
 # from dqn.replay_memory import ReplayMemory, GANReplayMemory
-from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
-# from dqn.replay_memory_test import ReplayMemory, GANReplayMemory
+# from dqn.replay_memory_dqn import ReplayMemory, GANReplayMemory
+from dqn.replay_memory_test import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
@@ -242,9 +242,6 @@ def train(sess, config):
                 gdm.summary, disc_summary = gdm.train(
                     norm_frame(state_batch), action_batch, norm_frame(next_state_batch), warmup_bool)
 
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
-                # writer.add_summary(merged_summary, step)
                 gen_step += 1
 
         if step > config.learn_start:
@@ -322,6 +319,10 @@ def train(sess, config):
         # calcurate infometion
         if step >= config.learn_start:
             if step % config._test_step == config._test_step - 1:
+
+                # plot
+                writer.add_summary(gdm.summary, step)
+                writer.add_summary(disc_summary, step)
 
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
