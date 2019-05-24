@@ -8,7 +8,7 @@ import tflib as lib
 import tflib.nn.conv2d
 import tflib.nn.deconv2d
 import tflib.nn.linear
-
+from dqn.utils import LinearSchedule
 
 def norm_state_Q_GAN(state):
     return tf.clip_by_value(state, -1*127.5/130., 127.5/130.)
@@ -37,6 +37,10 @@ class GDM():
         self.gamma_initializer = tf.truncated_normal_initializer(1.0, 0.02)
         # self.initializer = None
         self.gamma_initializer = None
+
+        self.exploration_gan = LinearSchedule(50000, 0.01)
+        self.gen_step = 0
+        self.gan_warmup = config.gan_warmup
 
         self.action = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
@@ -89,17 +93,23 @@ class GDM():
             states = np.concatenate([states, predicted_state], axis=1)
         return np.squeeze(states)
 
-    def train(self, pre_state, action, post_state, warmup, iteration=1):
-        # train discriminator
-        for _ in range(iteration):
-            _, disc_summary = self.sess.run([self.disc_train_op, self.disc_summary], feed_dict={
-                self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
-
-        # train gdm
-        # _, gdm_summary, merged_summary = self.sess.run([self.gdm_train_op, self.gdm_summary, self.merged_summary], feed_dict={
-        #     self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
-        _, gdm_summary = self.sess.run([self.gdm_train_op, self.gdm_summary], feed_dict={
+    def train(self, pre_state, action, post_state):
+        warmup = []
+        sample, gan_epsiron = 0, 0
+        for _ in range(self.lookahead):
+            if self.gen_step > self.gan_warmup:
+                sample = random.random()
+                gan_epsiron = self.exploration_gan.value(
+                    self.gen_step-self.config.gan_warmup)
+            else:
+                sample = 1
+                gan_epsiron = 0
+            warmup.append(sample > gan_epsiron)
+        _, _, disc_summary, gdm_summary = self.sess.run([self.disc_train_op, self.gdm_train_op, self.disc_summary, self.gdm_summary], feed_dict={
             self.pre_state: pre_state, self.post_state: post_state, self.action: action, self.warmup: warmup, self.is_training: True})
+
+        self.gen_step += 1
+
         return gdm_summary, disc_summary
 
     def disc_train(self, pre_state, action, post_state, iteration=1):
@@ -319,16 +329,30 @@ class GDM():
 
         fake_state = self.trajectories
 
-        # fake_state = self.pre_state
-        # with tf.variable_scope('gdm', reuse=True):
-        #     for i in range(0, self.lookahead):
-        #         fake_state = tf.cond(
-        #             self.warmup[i],
-        #             lambda: tf.concat(
-        #                 [fake_state, self.post_state[:, i:i+1, ...]], axis=1),
-        #             lambda: tf.concat([fake_state, norm_state_Q_GAN(self.build_gdm(
-        #                 fake_state[:, -1*self.history_length:, ...], tf.expand_dims(self.action[:, i], axis=1), self.is_training, ngf=self.gdm_ngf))], axis=1)
-        #         )
+        fake_state = self.pre_state
+        with tf.variable_scope('gdm', reuse=True):
+            for i in range(0, self.lookahead):
+                fake_state = tf.cond(
+                    self.warmup[i],
+                    lambda: tf.concat(
+                        [fake_state, norm_state_Q_GAN(
+                            self.build_gdm(
+                                tf.concat(fake_state[:, -self.history_length:-1, ...], self.post_state[:, i, ...]),
+                                tf.expand_dims(self.action[:, i],axis=1),
+                                self.is_training,
+                                ngf=self.gdm_ngf))
+                                ],
+                                axis=1),
+                    lambda: tf.concat(
+                        [fake_state, norm_state_Q_GAN(
+                            self.build_gdm(
+                                    fake_state[:, -self.history_length:, ...],
+                                    tf.expand_dims(self.action[:, i], axis=1),
+                                    self.is_training,
+                                    ngf=self.gdm_ngf))
+                                ],
+                                axis=1)
+                            )
 
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):

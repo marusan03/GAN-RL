@@ -34,10 +34,6 @@ def unnorm_frame(obs):
 
 def train(sess, config):
 
-    gen_step = 0
-    sample = 0
-    gan_epsiron = 0
-
     env = GymEnvironment(config)
 
     log_dir = './log/{}_lookahead_{}_gats_{}/'.format(
@@ -90,7 +86,6 @@ def train(sess, config):
     config.num_actions = 3
 
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
-    exploration_gan = LinearSchedule(50000, 0.01)
 
     agent = Agent(sess, config, num_actions=config.num_actions)
 
@@ -226,23 +221,10 @@ def train(sess, config):
                 # state_batch, act_batch, next_state_batch = memory.GAN_sample2(
                 #     config.gan_batch_size, config.lookahead)
 
-                warmup_bool = []
-                for _ in range(config.lookahead):
-                    if gen_step > config.gan_warmup:
-                        sample = random.random()
-                        gan_epsiron = exploration_gan.value(
-                            gen_step-config.gan_warmup)
-                    else:
-                        sample = 1
-                        gan_epsiron = 0
-                    warmup_bool.append(sample > gan_epsiron)
-
                 # gdm.summary, disc_summary, merged_summary = gdm.train(
                 #     norm_frame(state_batch), act_batch, norm_frame(next_state_batch), warmup_bool)
                 gdm.summary, disc_summary = gdm.train(
-                    norm_frame(state_batch), action_batch, norm_frame(next_state_batch), warmup_bool)
-
-                gen_step += 1
+                    norm_frame(state_batch), action_batch, norm_frame(next_state_batch))
 
         if step > config.learn_start:
             # if step % config.train_frequency == 0 and memory.can_sample(config.batch_size):
