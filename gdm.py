@@ -264,10 +264,10 @@ class GDM():
 
         return decode6
 
-    def build_discriminator(self, state, action, is_training=False, update_collection=None, lookahead=1, ngf=64):
+    def build_discriminator(self, state, action, is_training=False, update_collection=None, ngf=64):
 
         output = lib.nn.conv2d.Conv2D(
-            'Conv1', self.history_length + lookahead, ngf, 8, state, initializer=self.initializer, weight_decay_scale=self.disc_weight_decay, spectral_norm=True, update_collection=update_collection, stride=4, pytorch_biases=True, padding_size=1, data_format=self.data_format)
+            'Conv1', self.history_length + self.lookahead, ngf, 8, state, initializer=self.initializer, weight_decay_scale=self.disc_weight_decay, spectral_norm=True, update_collection=update_collection, stride=4, pytorch_biases=True, padding_size=1, data_format=self.data_format)
         output = tf.layers.batch_normalization(
             output, momentum=0.9, epsilon=1e-05, beta_initializer=self.beta_initializer, gamma_initializer=self.gamma_initializer, gamma_regularizer=tf.contrib.layers.l2_regularizer(scale=self.disc_weight_decay), training=is_training, name='BN1')
         output = tf.nn.leaky_relu(output, 0.2)
@@ -307,7 +307,7 @@ class GDM():
                            self.concat_dim, name='concat1')
 
         output = lib.nn.linear.Linear(
-            'Dence1', 16 * 25 + self.num_actions*lookahead, 18, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
+            'Dence1', 16 * 25 + self.num_actions*self.lookahead, 18, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         output = tf.nn.leaky_relu(output, 0.2)
         # (None, 18)
 
@@ -316,7 +316,7 @@ class GDM():
         # (None, 18+num_actions*lookahead)
 
         output = lib.nn.linear.Linear(
-            'Dence2', 18 + self.num_actions*lookahead, 1, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
+            'Dence2', 18 + self.num_actions*self.lookahead, 1, output, initialization='pytorch', weight_decay_scale=self.disc_weight_decay, spectral_norm=False, pytorch_biases=True, update_collection=update_collection)
         # (None, 3*lookahead)
 
         output = tf.reshape(output, [-1])
@@ -335,7 +335,7 @@ class GDM():
             for i in range(0, self.lookahead-1):
                 fake_state = tf.cond(
                     self.warmup[i],
-                    lambda: tf.concat(
+                    lambda fake_state: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
                                 tf.concat([fake_state[:, -self.history_length:-1, ...], self.post_state[:, i:i+1, ...]], axis=1),
@@ -344,7 +344,7 @@ class GDM():
                                 ngf=self.gdm_ngf))
                                 ],
                                 axis=1),
-                    lambda: tf.concat(
+                    lambda fake_state: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
                                     fake_state[:, -self.history_length:, ...],
@@ -358,12 +358,12 @@ class GDM():
         with tf.name_scope('disc_fake'):
             with tf.variable_scope('discriminator'):
                 disc_fake = self.build_discriminator(
-                    fake_state, self.action, self.is_training, update_collection=None, lookahead=self.lookahead, ngf=self.disc_ngf)
+                    fake_state, self.action, self.is_training, update_collection=None, ngf=self.disc_ngf)
 
         with tf.name_scope('disc_real'):
             with tf.variable_scope('discriminator', reuse=True):
                 disc_real = self.build_discriminator(
-                    real_state, self.action, self.is_training, update_collection='NO_OPS', lookahead=self.lookahead, ngf=self.disc_ngf)
+                    real_state, self.action, self.is_training, update_collection='NO_OPS', ngf=self.disc_ngf)
 
         with tf.name_scope('loss'):
             gdm_loss = -tf.reduce_mean(disc_fake)
