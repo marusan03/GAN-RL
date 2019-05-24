@@ -332,14 +332,12 @@ class GDM():
 
         with tf.variable_scope('gdm', reuse=True):
             for i in range(self.lookahead):
-                print(fake_state[:, -self.history_length:-1, ...].shape)
-                print(real_state[:, self.history_length+i-1:-self.history_length+i, ...].shape)
                 fake_state = tf.cond(
                     self.warmup[i],
                     lambda: tf.concat(
                         [fake_state, norm_state_Q_GAN(
                             self.build_gdm(
-                                tf.concat([fake_state[:, -self.history_length:-1, ...], real_state[:, self.history_length+i-1:-self.history_length+i, ...]], axis=1),
+                                tf.concat([fake_state[:, -self.history_length:-1, ...], real_state[:, self.history_length+i-1:self.history_length+i, ...]], axis=1),
                                 tf.expand_dims(self.action[:, i],axis=1),
                                 self.is_training,
                                 ngf=self.gdm_ngf))
@@ -405,8 +403,7 @@ class GDM():
         disc_summary = tf.summary.scalar('disc_loss', disc_loss)
 
         with tf.name_scope('L1_L2_loss'):
-            difference = fake_state[:, -1 *
-                                    self.lookahead:, ...] - self.post_state
+            difference = fake_state[:, -self.lookahead:, ...] - self.post_state
             l1_loss = tf.reduce_mean(tf.abs(difference))
             # l1_summary = tf.summary.scalar('l1_loss', l1_loss)
             l2_loss = tf.reduce_mean(tf.square(difference))
