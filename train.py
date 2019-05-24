@@ -439,11 +439,11 @@ def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
         os.makedirs(image_dir)
     states, actions = memory.rollout_state_action(num_rollout)
     states = norm_frame(states)
+    actions = np.concatenate([actions, [0] * (config.lookahead - 1)])
     images = gdm.rollout(np.expand_dims(
         states[:4], axis=0), actions, num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
-    actions = np.concatenate([actions, [0] * (config.lookahead - 1)])
     if config.gif == True:
         gif_images = np.concatenate([states, images], axis=1)
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
