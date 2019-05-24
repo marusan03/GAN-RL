@@ -98,6 +98,8 @@ def train(sess, config):
         leaves_size = config.num_actions**config.lookahead
         if config.dyna == True:
             gan_memory = GANReplayMemory(config)
+        else:
+            gan_memory = None
 
         def base_generator():
             tree_base = np.zeros((leaves_size, lookahead)).astype('uint8')
