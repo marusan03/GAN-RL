@@ -443,7 +443,7 @@ def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
         states[:4], axis=0), actions, num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
-    actions += [0] * (config.lookahead - 1)
+    actions = np.concatenate([actions, [0] * (config.lookahead - 1)])
     if config.gif == True:
         gif_images = np.concatenate([states, images], axis=1)
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
