@@ -23,6 +23,7 @@ flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
 # GATS
 flags.DEFINE_boolean('gats', False, 'Use GDM')
 flags.DEFINE_boolean('dyna', False, 'Whether to use dyna-Q')
+flags.DEFINE_boolean('subgoal', False, 'Whether to use subgoal')
 flags.DEFINE_integer('lookahead', 1, 'The number of lookahead. int[1-4]')
 
 # Environment
