@@ -44,8 +44,6 @@ class GDM():
 
         self.actions = tf.placeholder(
             tf.int32, shape=[None, self.lookahead], name='actions')
-        self.action = tf.placeholder(
-            tf.int32, shape=[None, 1], name='action')
         self.is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
         self.warmup = tf.placeholder(
@@ -90,7 +88,7 @@ class GDM():
 
     def rollout(self, states, actions, num_rollout):
         for i in range(num_rollout):
-            action = [actions[i:i+self.lookahead]]
+            action = np.expand_dims(actions[i:i+self.lookahead], axis=0)
             predicted_state = self.sess.run(self.predicted_state, feed_dict={
                 self.pre_state: states[:, -self.history_length:, ...], self.actions: action, self.is_training: False})
             states = np.concatenate([states, predicted_state], axis=1)
