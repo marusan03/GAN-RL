@@ -64,6 +64,7 @@ class GDMConfig(object):
     disc_weight_decay = 0.1
     gats = False
     dyna = False
+    subgoal = False
     rollout_frequency = 50000
     gif = True
 
