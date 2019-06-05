@@ -117,10 +117,6 @@ def train(sess, config):
     if config.subgoal:
         current_index = 0
 
-        gen_step = 0
-        sample = 0
-        gan_epsiron = 0
-
         # load subgoal images
         subgoal_pash = glob.glob('./subgoal/*.png')
         subgoal = [Image.open(pash) for pash in subgoal_pash]
