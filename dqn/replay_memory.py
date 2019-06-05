@@ -1,305 +1,342 @@
-import numpy as np
+import os
 import random
-import scipy.misc
-
-img_h, img_w = 84, 84
-
-
-def sample_n_unique(sampling_f, n):
-    res = []
-    while len(res) < n:
-        candidate = sampling_f()
-        # print(candidate)
-        if candidate not in res:
-            res.append(candidate)
-    return res
+import numpy as np
 
 
 class GANReplayMemory(object):
-    def __init__(self, config):
-        self.size = config.gan_memory_size
-        self.history_length = config.history_length
-        self.num_in_buffer = 0
-        self.next_idx = 0
+    """Dyna-Qのような学習に必要"""
 
-        self.obs = None
-        self.action = None
-        self.reward = None
+    def __init__(self, config):
+        self.cnn_format = config.cnn_format
+        self.memory_size = config.gan_memory_size
+        self.history_length = config.history_length
+        self.dims = (config.screen_height, config.screen_width)
+        self.batch_size = config.batch_size
+        self.count = 0
+        self.current = 0
+
+        self.states = np.empty(
+            (self.memory_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.actions = np.empty([self.memory_size], dtype=np.uint8)
+        self.rewards = np.empty([self.memory_size], dtype=np.integer)
+        self.terminals = np.full([self.batch_size], False)
+        # pre-allocate prestates for minibatch
+        self.prestates = np.empty(
+            (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
     def add_batch(self, frames, act, rew):
-        if self.obs is None:
-            self.obs = np.empty(
-                [self.size] + list(frames.shape), dtype=np.float32)
-            self.action = np.empty([self.size], dtype=np.uint8)
-            self.reward = np.empty([self.size], dtype=np.float32)
+        self.states[self.current, ...] = frames
+        self.actions[self.current] = act
+        self.rewards[self.current] = rew
 
-        self.obs[self.next_idx] = frames
-        self.action[self.next_idx] = act
-        self.reward[self.next_idx] = rew
-
-        self.next_idx = (self.next_idx + 1) % self.size
-        self.num_in_buffer = min(self.size, self.num_in_buffer + 1)
+        self.count = max(self.count, self.current + 1)
+        self.current = (self.current + 1) % self.memory_size
 
     def can_sample(self, batch_size):
         """Returns true if `batch_size` different transitions can be sampled from the buffer."""
-        return batch_size + 1 <= self.num_in_buffer
+        return batch_size + 1 <= self.count
 
-    def sample(self, batch_size):
-        idxes = sample_n_unique(lambda: random.randint(
-            0, self.num_in_buffer - 1), batch_size)
-        obs_batch = np.stack([self.obs[idx] for idx in idxes], 0)
-        act_batch = np.stack([self.action[idx] for idx in idxes], 0)
-        rew_batch = np.stack([self.reward[idx] for idx in idxes], 0)
-        return obs_batch, act_batch, rew_batch
+    def sample(self):
+            # memory must include poststate, prestate and history
+        assert self.count > self.history_length
+        # sample random indexes
+        indexes = np.random.randint(
+            0, self.count - 1, (self.batch_size))
+
+        self.prestates = self.states[indexes]
+        actions = self.actions[indexes]
+        rewards = self.rewards[indexes]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, rewards, self.terminals
+        else:
+            return self.prestates, actions, rewards, self.terminals
 
 
-class ReplayMemory(object):
-    def __init__(self, config):
-        self.size = config.memory_size
+class ReplayMemory:
+    def __init__(self, config, model_dir):
+        self.model_dir = model_dir
+
+        self.cnn_format = config.cnn_format
+        self.memory_size = config.memory_size
+        self.actions = np.empty(self.memory_size, dtype=np.uint8)
+        self.rewards = np.empty(self.memory_size, dtype=np.integer)
+        self.screens = np.empty(
+            (self.memory_size, config.screen_height, config.screen_width), dtype=np.uint8)
+        self.terminals = np.empty(self.memory_size, dtype=np.bool)
         self.history_length = config.history_length
-
-        self.next_idx = 0
-        self.num_in_buffer = 0
+        self.dims = (config.screen_height, config.screen_width)
+        self.batch_size = config.batch_size
+        self.gan_batch_size = config.gan_batch_size
+        self.rp_batch_size = config.rp_batch_size
+        self.nonzero_batch_size = config.nonzero_batch_size
+        self.lookahead = config.lookahead
+        self.count = 0
+        self.current = 0
+        # reward predictor
         self.nonzero_rewards = []
-        self.overwrite_idx = None
+        self.overwrite_index = None
 
-        self.obs = np.empty(
-            [self.size, 1, config.screen_height, config.screen_width], dtype=np.uint8)
-        self.action = np.empty([self.size],
-                               dtype=np.int32)
-        self.reward = np.empty([self.size],
-                               dtype=np.float32)
-        self.done = np.empty([self.size],
-                             dtype=np.bool)
+        # pre-allocate prestates and poststates for minibatch
+        self.prestates = np.empty(
+            (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.poststates = np.empty(
+            (self.batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.gan_states = np.empty(
+            (self.gan_batch_size, self.history_length + self.lookahead) + self.dims, dtype=np.uint8)
+        self.reward_states = np.empty(
+            (self.rp_batch_size, self.history_length) + self.dims, dtype=np.uint8)
+        self.nonzero_states = np.empty(
+            (self.nonzero_batch_size, self.history_length) + self.dims, dtype=np.uint8)
 
-    def can_sample(self, batch_size):
-        """Returns true if `batch_size` different transitions can be sampled from the buffer."""
-        return batch_size + 1 <= self.num_in_buffer
+    def add(self, screen, reward, action, terminal):
+        assert screen.shape == self.dims
+        # NB! screen is post-state, after action and reward
+        self.actions[self.current] = action
+        self.rewards[self.current] = reward
+        self.screens[self.current, ...] = screen
+        self.terminals[self.current] = terminal
 
-    def _encode_sample(self, idxes):
-        obs_batch = np.concatenate(
-            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
-        act_batch = self.action[idxes]
-        rew_batch = self.reward[idxes]
-        next_obs_batch = np.concatenate(
-            [self._encode_observation(idx + 1)[np.newaxis, :] for idx in idxes], 0)
-        done_mask = np.array(
-            [1.0 if self.done[idx] else 0.0 for idx in idxes], dtype=np.float32)
+        if(self.overwrite_index != None and self.current == self.nonzero_rewards[self.overwrite_index]):
+            self.nonzero_rewards.pop(self.overwrite_index)
+            if self.overwrite_index >= len(self.nonzero_rewards):
+                self.overwrite_index = None
 
-        return obs_batch, act_batch, rew_batch, next_obs_batch, done_mask
-
-    def GAN_encode_sample(self, idxes, lookahead):
-        obs_batch = np.concatenate(
-            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
-        gan_seq = [self.GAN_encode_observation_action(
-            idx + 1, lookahead) for idx in idxes]
-        act_batch = np.concatenate(
-            [gan_seq[i][1][np.newaxis, :, 0] for i in range(len(idxes))], 0)
-        # reward_batch = np.concatenate(
-        #     [gan_seq[i][2][np.newaxis, :, 0] for i in range(len(idxes))], 0)
-        next_obs_batch = np.concatenate(
-            [gan_seq[i][0][np.newaxis, :] for i in range(len(idxes))], 0)
-
-        return obs_batch, act_batch, next_obs_batch
-
-    def reward_encode_sample(self, idxes, lookahead):
-        obs_batch = np.concatenate(
-            [self._encode_observation(idx)[np.newaxis, :] for idx in idxes], 0)
-        seq = [self._encode_reward_action(idx + 1, lookahead) for idx in idxes]
-        act_batch = np.concatenate(
-            [seq[i][0][np.newaxis, :, 0] for i in range(len(idxes))], 0)
-        rew_batch = np.concatenate([seq[i][1][np.newaxis, :]
-                                    for i in range(len(idxes))], 0)
-        return obs_batch, act_batch, rew_batch
-
-    def sample(self, batch_size, lookahead):
-        assert self.can_sample(batch_size)
-        idxes = sample_n_unique(lambda: random.randint(
-            lookahead + self.history_length, self.num_in_buffer - 2 - lookahead), batch_size)
-
-        return self._encode_sample(idxes)
-
-    def GAN_sample(self, batch_size, lookahead):
-        assert self.can_sample(batch_size)
-        # idxes = sample_n_unique(lambda: random.randint(0, self.num_in_buffer-2-lookahead), batch_size)
-        idxes = sample_n_unique(lambda: (self.next_idx-random.randint(lookahead+self.history_length, 60000)) % (
-            self.num_in_buffer-2*lookahead-2*self.history_length-1)+lookahead+self.history_length, batch_size)
-        self.next_idx
-        return self.GAN_encode_sample(idxes, lookahead)
-
-    def reward_sample(self, batch_size, lookahead):
-        assert self.can_sample(lookahead)
-        # idxes = sample_n_unique(lambda: random.randint(lookahead, self.num_in_buffer - 2 - lookahead), batch_size)
-        idxes = sample_n_unique(lambda: (self.next_idx-random.randint(lookahead+self.history_length, 60000)) %
-                                (self.num_in_buffer-lookahead-self.history_length), batch_size)
-        return self.reward_encode_sample(idxes, lookahead)
-
-    def get_rand_nonzero_idx(self, lookahead):
-        nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
-            0] - random.randint(0, lookahead)
-        while nonzero_idx % (self.num_in_buffer-lookahead-2) != nonzero_idx:
-            nonzero_idx = np.random.choice(self.nonzero_rewards, size=1)[
-                0] - random.randint(0, lookahead)
-        start_idx = nonzero_idx
-        # for idx in range(start_idx, nonzero_idx):
-        #     if self.done[idx % self.size]:
-        #         start_idx = idx + 1
-        return start_idx
-
-    def nonzero_reward_sample(self, batch_size, lookahead):
-        # assert self.can_sample_nonzero_rewards(lookahead)
-        # nonzero_idxes = np.random.choice(self.nonzero_rewards, size=batch_size)
-        idxes = [self.get_rand_nonzero_idx(lookahead)
-                 for i in range(batch_size)]
-        return self.reward_encode_sample(idxes, lookahead)
-
-    def encode_recent_observation(self):
-        assert self.num_in_buffer > 0
-        return self._encode_observation((self.next_idx - 1) % self.num_in_buffer)
-
-    def _encode_observation(self, idx):
-        end_idx = idx + 1  # make noninclusive
-        start_idx = end_idx - self.history_length
-        # this checks if we are using low-dimensional observations, such as RAM
-        # state, in which case we just directly return the latest RAM.
-        if len(self.obs.shape) == 2:
-            return self.obs[end_idx-1]
-        # if there weren't enough frames ever in the buffer for context
-        if start_idx < 0 and self.num_in_buffer != self.size:
-            start_idx = 0
-        for idx in range(start_idx, end_idx - 1):
-            if self.done[idx % self.num_in_buffer]:
-                start_idx = idx + 1
-        missing_context = self.history_length - (end_idx - start_idx)
-        # if zero padding is needed for missing context
-        # or we are on the boundry of the buffer
-        repeat_frame = self.obs[start_idx % self.num_in_buffer]
-        if start_idx < 0 or missing_context > 0:
-            frames = [repeat_frame for _ in range(missing_context)]
-            for idx in range(start_idx, end_idx):
-                frames.append(self.obs[idx % self.num_in_buffer])
-            return np.concatenate(frames, 0)
-        else:
-            # this optimization has potential to saves about 30% compute time \o/
-            img_h, img_w = self.obs.shape[2], self.obs.shape[3]
-            return self.obs[start_idx:end_idx].reshape(-1, img_h, img_w)
-
-    def GAN_encode_observation_action(self, idx, lookahead):
-        end_idx = idx + lookahead  # make noninclusive
-        start_idx = idx
-        # this checks if we are using low-dimensional observations, such as RAM
-        # state, in which case we just directly return the latest RAM.
-        if len(self.obs.shape) == 2:
-            return self.obs[end_idx-1]
-        # if there weren't enough frames ever in the buffer for context
-        if start_idx < 0 and self.num_in_buffer != self.size:
-            start_idx = 0
-        for idx in range(start_idx, end_idx - 1):
-            if self.done[idx % self.num_in_buffer]:
-                start_idx = idx + 1
-        missing_context = lookahead - (end_idx - start_idx)
-        # if zero padding is needed for missing context
-        # or we are on the boundry of the buffer
-        repeat_frame = self.obs[start_idx % self.num_in_buffer]
-        if start_idx < 0 or missing_context > 0:
-            frames = [repeat_frame for _ in range(missing_context)]
-            action = [0 for _ in range(missing_context)]
-            reward = [0 for _ in range(missing_context)]
-            for idx in range(start_idx, end_idx):
-                frames.append(self.obs[idx % self.num_in_buffer])
-                action.append(self.action[idx-1 % self.num_in_buffer])
-                reward.append(self.reward[idx-1 % self.num_in_buffer])
-            return np.concatenate(frames, 0), np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
-        else:
-            # this optimization has potential to saves about 30% compute time \o/
-            img_h, img_w = self.obs.shape[2], self.obs.shape[3]
-            return self.obs[start_idx:end_idx].reshape(-1, img_h, img_w), self.action[start_idx - 1:end_idx - 1].reshape(-1, 1), self.reward[start_idx - 1:end_idx - 1].reshape(-1, 1)
-
-    def _encode_reward_action(self, idx, lookahead):
-        end_idx = idx + lookahead + 1  # make noninclusive
-        start_idx = idx
-        if start_idx < 0 and self.num_in_buffer != self.size:
-            start_idx = 0
-        for idx in range(start_idx, end_idx - 1):
-            if self.done[idx % self.num_in_buffer]:
-                start_idx = idx + 1
-        missing_context = (lookahead + 1) - (end_idx - start_idx)
-        # if zero padding is needed for missing context
-        # or we are on the boundry of the buffer
-        if start_idx < 0 or missing_context > 0:
-            action = [0 for _ in range(missing_context)]
-            reward = [0 for _ in range(missing_context)]
-            for idx in range(start_idx, end_idx):
-                action.append(self.action[(idx-1) % self.num_in_buffer])
-                reward.append(self.reward[(idx-1) % self.num_in_buffer])
-            return np.asarray(action).reshape(-1, 1), np.asarray(reward).reshape(-1, 1)
-        else:
-            # this optimization has potential to saves about 30% compute time \o/
-            return self.action[start_idx-1:end_idx-1].reshape(-1, 1), self.reward[start_idx-1:end_idx-1].reshape(-1, 1)
-
-    def add(self, frame, reward, action, done):
-        # make sure we are not using low-dimensional observations, such as RAM
-        if len(frame.shape) > 1:
-            # transpose image frame into (img_c, img_h, img_w)
-            frame = frame.reshape([1, img_h, img_w])
-
-        self.obs[self.next_idx] = frame
-        self.action[self.next_idx] = action
-        self.reward[self.next_idx] = reward
-        self.done[self.next_idx] = done
-
-        if(self.overwrite_idx != None and self.next_idx == self.nonzero_rewards[self.overwrite_idx]):
-            self.nonzero_rewards.pop(self.overwrite_idx)
-            if self.overwrite_idx >= len(self.nonzero_rewards):
-                self.overwrite_idx = None
-
-        if (self.next_idx + 1) >= self.size and len(self.nonzero_rewards):
-            self.overwrite_idx = 0
+        if (self.current + 1) >= self.memory_size and len(self.nonzero_rewards):
+            self.overwrite_index = 0
 
         if (reward != 0):
-            if self.overwrite_idx == None:
-                self.nonzero_rewards.append(self.next_idx)
+            if self.overwrite_index == None:
+                self.nonzero_rewards.append(self.current)
             else:
-                self.nonzero_rewards.insert(self.overwrite_idx, self.next_idx)
-                self.overwrite_idx += 1
+                self.nonzero_rewards.insert(self.overwrite_index, self.current)
+                self.overwrite_index += 1
 
-        self.next_idx = (self.next_idx + 1) % self.size
-        self.num_in_buffer = min(self.size, self.num_in_buffer + 1)
+        self.count = max(self.count, self.current + 1)
+        self.current = (self.current + 1) % self.memory_size
+
+    def getState(self, index, lookahead=0):
+        assert self.count > 0, "replay memory is empty, use at least --random_steps 1"
+        # normalize index to expected range, allows negative indexes
+        index = index % self.count
+        # if is not in the beginning of matrix
+        if index >= self.history_length - 1:
+            # use faster slicing
+            return self.screens[(index - (self.history_length - 1)):(index + 1 + lookahead), ...]
+        else:
+            # otherwise normalize indexes and use slower list based access
+            indexes = [(index - i) %
+                       self.count for i in reversed(range(self.history_length + lookahead))]
+            return self.screens[indexes, ...]
+
+    def rollout_state_action(self, num_rollout=4):
+        index = 0
+        while True:
+            # sample one index (ignore states wraping over
+            index = random.randint(self.history_length,
+                                   self.count - num_rollout - 1)
+            # if wraps over current pointer, then get new one
+            if index + (num_rollout - 1) >= self.current and index - self.history_length < self.current:
+                continue
+            # if wraps over episode end, then get new one
+            # NB! poststate (last screen) can be terminal state!
+            if self.terminals[(index - self.history_length):index + (num_rollout - 1)].any():
+                continue
+            # otherwise use this index
+            break
+        state = self.getState(index - 1, num_rollout)
+        action = self.actions[index:index+num_rollout]
+        return state, action
+
+    def sample(self):
+        # memory must include poststate, prestate and history
+        assert self.count > self.history_length
+        # sample random indexes
+        indexes = []
+        while len(indexes) < self.batch_size:
+            # find random index
+            while True:
+                # sample one index (ignore states wraping over
+                index = random.randint(self.history_length, self.count - 1)
+                # if wraps over current pointer, then get new one
+                if index >= self.current and index - self.history_length < self.current:
+                    continue
+                # if wraps over episode end, then get new one
+                # NB! poststate (last screen) can be terminal state!
+                if self.terminals[(index - self.history_length):index].any():
+                    continue
+                # otherwise use this index
+                break
+
+            # NB! having index first is fastest in C-order matrices
+            self.prestates[len(indexes), ...] = self.getState(index - 1)
+            self.poststates[len(indexes), ...] = self.getState(index)
+            indexes.append(index)
+
+        actions = self.actions[indexes]
+        rewards = self.rewards[indexes]
+        terminals = self.terminals[indexes]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.prestates, (0, 2, 3, 1)), actions, \
+                rewards, np.transpose(self.poststates, (0, 2, 3, 1)), terminals
+        else:
+            return self.prestates, actions, rewards, self.poststates, terminals
+
+    def GAN_sample(self):
+        assert self.count > self.gan_batch_size
+
+        indexes = []
+        while len(indexes) < self.gan_batch_size:
+            # find random index
+            while True:
+                # sample one index (ignore states wraping over
+                # index = random.randint(
+                #     self.history_length, self.count - (1 + (self.lookahead - 1)))
+                # if self.count < 60000:
+                #     index = random.randint(
+                #         self.history_length, self.count - (1 + (self.lookahead - 1)))
+                # else:
+                index = (self.current-random.randint(self.lookahead+self.history_length, 60000)) % (
+                    self.count-2*self.lookahead-2*self.history_length-1)+self.lookahead+self.history_length
+
+                # if wraps over current pointer, then get new one
+                if index + (self.lookahead - 1) >= self.current and index - self.history_length < self.current:
+                    continue
+                # if wraps over episode end, then get new one
+                # NB! poststate (last screen) can be terminal state!
+                if self.terminals[(index - self.history_length):index + (self.lookahead - 1)].any():
+                    continue
+                # otherwise use this index
+                break
+
+            # NB! having index first is fastest in C-order matrices
+            self.gan_states[len(indexes), ...] = self.getState(
+                index - 1, self.lookahead)
+            indexes.append(index)
+
+        if self.lookahead == 1:
+            actions = np.expand_dims(self.actions[indexes], axis=1)
+        else:
+            actions = [self.actions[i:i+self.lookahead] for i in indexes]
+
+        if self.cnn_format == 'NHWC':
+            return np.transpose(self.gan_states[:, :self.history_length, ...], (0, 2, 3, 1)), actions, np.transpose(self.gan_states[:, self.history_length:, ...], (0, 2, 3, 1))
+        else:
+            return self.gan_states[:, :self.history_length, ...], actions, self.gan_states[:, self.history_length:, ...]
+
+    def reward_sample(self, batch_size, nonzero=False):
+        assert self.count > batch_size
+
+        indexes = []
+        missing_context = 0
+        missing_context_index = 0
+        missing_context_indexes = []
+        while len(indexes) < batch_size:
+            # find random index
+            while True:
+                # sample one index (ignore states wraping over
+                if nonzero == True and (len(self.nonzero_rewards) > 0):
+                    nonzero_index = np.random.choice(
+                        self.nonzero_rewards) - random.randint(0, self.lookahead)
+                    while nonzero_index % (self.count-self.lookahead-2) != nonzero_index:
+                        nonzero_index = np.random.choice(
+                            self.nonzero_rewards) - random.randint(0, self.lookahead)
+                    index = nonzero_index
+                else:
+                    if self.count < 60000:
+                        index = random.randint(
+                            self.history_length + self.lookahead, self.count - (1 + self.lookahead))
+                    else:
+                        index = (self.current-random.randint(self.history_length,
+                                                             60000)) % (self.count-self.lookahead-self.history_length)
+                    #     if 0 > index:
+                    #         index += self.count
+                    # if nonzero == False and ((index in self.nonzero_rewards) or (index + 1 in self.nonzero_rewards)):
+                    #     continue
+
+                # if wraps over current pointer, then get new one
+                if index - 1 >= self.current and index - self.history_length < self.current:
+                    continue
+                # if wraps over episode end, then get new one
+                # NB! poststate (last screen) can be terminal state!
+                if self.terminals[(index - self.history_length):index - 1].any():
+                #     missing_context_index = np.where(
+                #         self.terminals[(index - self.history_length):index - 1] == True)
+                #     missing_context = self.history_length - index - missing_context_index
+                #     break
+                    continue
+                # otherwise use this index
+                break
+
+            # NB! having index first is fastest in C-order matrices
+            if missing_context_index > 0:
+                buf_state = self.getState(index - 1)
+                buf_state[: missing_context] = np.repeat(
+                    buf_state[missing_context + 1: ...], missing_context, 0)
+                self.reward_states[len(indexes), ...] = buf_state
+                missing_context_indexes.append(index)
+            else:
+                if nonzero == False:
+                    self.reward_states[len(indexes), ...] = self.getState(
+                        index - 1)
+                else:
+                    self.nonzero_states[len(indexes), ...] = self.getState(
+                        index - 1)
+            indexes.append(index)
+
+        actions = [self.actions[i:i+self.lookahead+1] for i in indexes]
+        rewards = [self.rewards[i:i+self.lookahead+1] for i in indexes]
+
+        if self.cnn_format == 'NHWC':
+            if nonzero == False:
+                return np.transpose(self.reward_states, (0, 2, 3, 1)), actions, rewards
+            else:
+                return np.transpose(self.nonzero_states, (0, 2, 3, 1)), actions, rewards
+        else:
+            if nonzero == False:
+                return self.reward_states, actions, rewards
+            else:
+                return self.nonzero_states, actions, rewards
+
+    def can_sample(self, batch_size):
+        return batch_size + 1 <= self.count
 
 
-if __name__ == "__main__":
-    class config():
-        cnn_format = 'NCHW'
-        memory_size = 100000
-        batch_size = 5
-        gan_batch_size = 5
-        rp_batch_size = 5
-        lookahead = 1
-        history_length = 4
-        screen_height = 1
-        screen_width = 1
-    config = config()
-    test_memory = ReplayMemory(config)
-    test_data = np.arange(1, 101)
-    test_memory.action[0: 100] = test_data
-    test_memory.reward[0: 100] = test_data
-    test_memory.obs[0: 100, ...] = np.repeat(
-        test_data, 1**2).reshape([100, 1, 1, 1])
-    # print(test_memory.rewards)
-    # print(test_memory.actions)
-    test_memory.num_in_buffer = 100
-    test_memory.next_idx = 100
-    pre, act, rew, nex, _ = test_memory.sample(5, 1)
-    print(pre.reshape([-1]))
-    print(act.reshape([-1]))
-    print(rew.reshape([-1]))
-    print(nex.reshape([-1]))
-    obs, act, nex = test_memory.GAN_sample(5, 1)
-    print(obs.reshape([-1]))
-    print(act.reshape([-1]))
-    print(nex.reshape([-1]))
+# def test_dqn_replay_memory():
+#     class config():
+#         cnn_format = 'NCHW'
+#         memory_size = 100
+#         batch_size = 5
+#         gan_batch_size = 5
+#         rp_batch_size = 5
+#         lookahead = 1
+#         history_length = 4
+#         screen_height = 1
+#         screen_width = 1
+#     config = config()
+#     model_dir = ""
+#     test_memory = ReplayMemory(config, model_dir)
+#     test_data = np.arange(1, 101)
+#     test_memory.actions[0: 100] = test_data
+#     test_memory.rewards[0: 100] = test_data
+#     test_memory.screens[0: 100, ...] = np.repeat(
+#         test_data, 1**2).reshape([100, 1, 1])
+#     # print(test_memory.rewards)
+#     # print(test_memory.actions)
+#     test_memory.count = 100
+#     test_memory.current = random.randint(0, 100)
 
-    obs, act, rew = test_memory.reward_sample(5, 1)
-    print(obs.reshape([-1]))
-    print(act.reshape([-1]))
-    print(rew.reshape([-1]))
+#     pre, act, rew, post, _ = test_memory.sample()
+#     pre_index = pre[]
+
+#     assert pre == np.arange(
+#         pre_index - 4, pre_index), "{},{}".format(pre, np.arange(pre_index - 4, pre_index))
+#     assert act == pre_index + 1
+#     assert rew == pre_index + 1
+#     assert post == pre_index
+
+
+# if __name__ == "__main__":
+
+#     test_dqn_replay_memory()
