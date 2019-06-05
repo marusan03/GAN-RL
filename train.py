@@ -1,9 +1,11 @@
 import os
 import shutil
 import random
+import glob
+
+import imagehash
 from tqdm import tqdm
 from PIL import Image
-
 import tensorflow as tf
 import numpy as np
 
@@ -87,7 +89,7 @@ def train(sess, config):
 
     agent = Agent(sess, config, num_actions=config.num_actions)
 
-    if config.gats == True:
+    if config.gats:
         lookahead = config.lookahead
         rp_train_frequency = 4
         gdm_train_frequency = 4
@@ -111,6 +113,23 @@ def train(sess, config):
             return tree_base
 
         tree_base = base_generator()
+
+    if config.subgoal:
+        current_index = 0
+
+        gen_step = 0
+        sample = 0
+        gan_epsiron = 0
+
+        # load subgoal images
+        subgoal_pash = glob.glob('./subgoal/*.png')
+        subgoal = [Image.open(pash) for pash in subgoal_pash]
+        subgoal = subgoal[3:]
+
+        # subgoal
+        episode_step = 0
+        ex_reward = 0
+
 
     # memory = ReplayMemory(config)
     memory = ReplayMemory(config, log_dir)
@@ -152,6 +171,11 @@ def train(sess, config):
             total_reward, total_loss, total_q_value = 0., 0., 0.
             ep_rewards, actions = [], []
 
+            if config.subgoal:
+                episode_step = 0
+                current_index = 0
+                ex_reward = 0
+
         if step == config.gan_dqn_learn_start:
             rp_accuracy = []
             rp_plus_accuracy = []
@@ -166,23 +190,41 @@ def train(sess, config):
         else:
             current_state = norm_frame(np.expand_dims(history.get(), axis=0))
             if config.gats and (step >= config.gan_dqn_learn_start):
+                current_subgoal = subgoal[current_index]
                 action, predicted_reward = MCTS_planning(
-                    gdm, rp, agent, current_state, leaves_size, tree_base, config, exploration, step, gan_memory)
+                    gdm, rp, agent, current_state, leaves_size, tree_base, config, exploration, step, current_subgoal, gan_memory)
                 MCTS_FLAG = True
             else:
                 action = agent.get_action(
                     norm_frame_Q(unnorm_frame(current_state)))
 
-        # GATS用?
+        # Pongの場合
         apply_action = action
         if int(apply_action != 0):
             apply_action += 1
 
         # Observe
         screen, reward, terminal = env.act(apply_action, is_training=True)
-        reward = max(config.min_reward, min(config.max_reward, reward))
-        history.add(screen)
-        memory.add(screen, reward, action, terminal)
+        subgoal_hash = imagehash.phash(subgoal[current_index])
+        real_hash = imagehash.phash(Image.fromarray(screen))
+        if subgoal_hash - real_hash <= 7:
+            ex_reward = 0.1
+        else:
+            ex_reward = 0
+
+        if current_index < episode_step // 10:
+            current_index += 1
+            if len(subgoal) == current_index:
+                current_index -= 1
+
+
+
+        learn_reward = max(config.min_reward, min(
+            config.max_reward, reward + ex_reward))
+        memory.add(screen, learn_reward, action, terminal)
+        # reward = max(config.min_reward, min(config.max_reward, reward))
+        # history.add(screen)
+        # memory.add(screen, reward, action, terminal)
 
         if MCTS_FLAG == True:
             rp_accuracy.append(int(predicted_reward == reward))
@@ -278,8 +320,11 @@ def train(sess, config):
             num_game += 1
             ep_rewards.append(ep_reward)
             ep_reward = 0.
+            episode_step = 0
+            current_index = 0
         else:
             ep_reward += reward
+            episode_step += 1
 
         total_reward += reward
 
@@ -390,7 +435,7 @@ def inject_summary(sess, writer, summary_ops, summary_placeholders, tag_dict, st
         writer.add_summary(summary_str, step)
 
 
-def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, step, gan_memory=None):
+def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, exploration, step, subgoal, gan_memory=None):
 
     sample1 = random.random()
     sample2 = random.random()
@@ -399,6 +444,9 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     state = np.repeat(state, leaves_size, axis=0)
     action = tree_base
     trajectories = gdm.get_state(state, action)
+    trajectories_hash = np.array([imagehash.phash(subgoal) - imagehash.phash(
+        Image.fromarray(unnorm_frame(trajectories[i, -1, :, :]))) for i in range(leaves_size)])
+    trajectories_hash = (1 - trajectories_hash // 10)
     leaves_q_value = agent.get_q_value(
         norm_frame_Q(unnorm_frame(trajectories[:, -config.history_length:, ...])))
     leaves_Q_max = (config.discount ** config.lookahead) * \
@@ -415,6 +463,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
         predicted_cum_return = config.discount * predicted_cum_return + \
             (np.argmax(predicted_cum_rew[:, ((config.lookahead-i-1)*config.num_rewards):(
                 (config.lookahead-i)*config.num_rewards)], axis=1)-1.)
+    predicted_cum_return += trajectories_hash * config.discount ** (config.lookahead - 1)
     GATS_action = leaves_Q_max + predicted_cum_return
     max_idx = np.argmax(GATS_action, axis=0)
     predicted_reward = np.argmax(
