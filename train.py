@@ -201,23 +201,21 @@ def train(sess, config):
 
         # Observe
         screen, reward, terminal = env.act(apply_action, is_training=True)
+        history.add(screen)
         subgoal_hash = imagehash.phash(subgoal[current_index])
         real_hash = imagehash.phash(Image.fromarray(screen))
-        if subgoal_hash - real_hash <= 7:
-            ex_reward = 0.1
-        else:
-            ex_reward = 0
+#         if subgoal_hash - real_hash <= 7:
+#             ex_reward = 0.1
+#         else:
+#             ex_reward = 0
 
         if current_index < episode_step // 10:
             current_index += 1
             if len(subgoal) == current_index:
                 current_index -= 1
 
-
-
-        learn_reward = max(config.min_reward, min(
-            config.max_reward, reward + ex_reward))
-        memory.add(screen, learn_reward, action, terminal)
+        reward = max(config.min_reward, min(config.max_reward, reward))
+        memory.add(screen, reward, action, terminal)
         # reward = max(config.min_reward, min(config.max_reward, reward))
         # history.add(screen)
         # memory.add(screen, reward, action, terminal)
@@ -443,6 +441,7 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
     trajectories_hash = np.array([imagehash.phash(subgoal) - imagehash.phash(
         Image.fromarray(unnorm_frame(trajectories[i, -1, :, :]))) for i in range(leaves_size)])
     trajectories_hash = (1 - trajectories_hash // 10)
+    trajectories_hash = np.where(trajectories_hash < 0., 0., trajectories_hash)
     leaves_q_value = agent.get_q_value(
         norm_frame_Q(unnorm_frame(trajectories[:, -config.history_length:, ...])))
     leaves_Q_max = (config.discount ** config.lookahead) * \

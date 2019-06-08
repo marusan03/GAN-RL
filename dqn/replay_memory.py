@@ -105,7 +105,7 @@ class ReplayMemory:
         if (self.current + 1) >= self.memory_size and len(self.nonzero_rewards):
             self.overwrite_index = 0
 
-        if (int(reward) != 0):
+        if (reward != 0):
             if self.overwrite_index == None:
                 self.nonzero_rewards.append(self.current)
             else:
