@@ -11,7 +11,7 @@ from collections import deque
 class Environment(object):
     def __init__(self, config):
         self.env = gym.make(config.env_name)
-        if config.is_train == False:
+        if config.is_train == True:
             if not os.path.exists('./video/'):
                 os.makedirs('./video/')
             self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 1 == 0))
