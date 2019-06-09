@@ -29,6 +29,7 @@ class Environment(object):
         self._screen = None
         self.reward = 0
         self.terminal = True
+        self.step_info = None
 
     def new_game(self, from_random_game=False):
         if self.lives == 0:
