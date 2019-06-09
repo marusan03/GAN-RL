@@ -49,7 +49,7 @@ class Environment(object):
         return self.screen, 0, 0, self.terminal
 
     def _step(self, action):
-        self._screen, self.reward, self.terminal, _ = self.env.step(action)
+        self._screen, self.reward, self.terminal, self.step_info = self.env.step(action)
 
     def _random_step(self):
         action = self.env.action_space.sample()
