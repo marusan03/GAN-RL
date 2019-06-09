@@ -1,4 +1,5 @@
 import os
+import shutil
 import gym
 from gym import wrappers
 import random
