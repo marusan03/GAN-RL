@@ -15,7 +15,7 @@ class Environment(object):
             if not os.path.exists('./video/'):
                 os.makedirs('./video/')
             self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 1 == 0))
-        self.env = self.env.unwrapped
+        # self.env = self.env.unwrapped
 
         screen_width, screen_height, self.action_repeat, self.random_start = \
             config.screen_width, config.screen_height, config.action_repeat, config.random_start
@@ -82,7 +82,10 @@ class Environment(object):
 
     @property
     def lives(self):
-        return self.env.ale.lives()
+        if self.step_info is None:
+            return 0
+        else:
+            return self.step_info['ale.lives']
 
     @property
     def state(self):
