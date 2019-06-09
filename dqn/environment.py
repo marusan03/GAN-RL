@@ -14,6 +14,8 @@ class Environment(object):
         if config.is_train == True:
             if not os.path.exists('./video/'):
                 os.makedirs('./video/')
+            else:
+                shutil.rmtree('./video/')
             self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 1 == 0))
         # self.env = self.env.unwrapped
 
