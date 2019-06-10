@@ -38,6 +38,7 @@ flags.DEFINE_string('gpu_fraction', '1/1',
 flags.DEFINE_boolean(
     'display', False, 'Whether to do display the game screen or not')
 flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
+flags.DEFINE_boolean('is_video', False, 'Whether to do video')
 flags.DEFINE_integer('random_seed', 123, 'Value of random seed')
 
 # Set random seed

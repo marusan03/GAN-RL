@@ -35,6 +35,7 @@ class AgentConfig(object):
     num_actions = 18
 
     is_train = None
+    is_video = False
 
 
 class EnvironmentConfig(object):

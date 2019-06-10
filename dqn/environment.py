@@ -12,12 +12,12 @@ from collections import deque
 class Environment(object):
     def __init__(self, config):
         self.env = gym.make(config.env_name)
-        if config.is_train == True:
+        if config.is_video == True:
             if not os.path.exists('./video/'):
                 os.makedirs('./video/')
             else:
                 shutil.rmtree('./video/')
-            self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 1 == 0))
+            self.env = wrappers.Monitor(self.env, './video/', video_callable=(lambda ep: ep % 100 == 0))
         # self.env = self.env.unwrapped
 
         screen_width, screen_height, self.action_repeat, self.random_start = \
