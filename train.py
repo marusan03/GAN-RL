@@ -9,7 +9,8 @@ from PIL import Image
 import tensorflow as tf
 import numpy as np
 
-from dqn.environment import GymEnvironment
+import simple_maze
+from dqn.environment import GymEnvironment, SimpleGymEnvironment
 from dqn.replay_memory import ReplayMemory, GANReplayMemory
 from dqn.history import History
 from dqn.agent import Agent
@@ -34,7 +35,10 @@ def unnorm_frame(obs):
 
 def train(sess, config):
 
-    env = GymEnvironment(config)
+    if 'maze-v0' == config.env_name:
+        env = SimpleGymEnvironment(config)
+    else:
+        env = GymEnvironment(config)
 
     log_dir = './log/{}_lookahead_{}_gats_{}/'.format(
         config.env_name, config.lookahead, config.gats)
@@ -82,8 +86,8 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.histogram(
                 tag, summary_placeholders[tag])
 
-    # config.num_actions = env.action_size
-    config.num_actions = 3
+    config.num_actions = env.action_size
+    # config.num_actions = 3
 
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
 
@@ -151,7 +155,7 @@ def train(sess, config):
     rp_minus_accuracy = []
     nonzero_rp_accuracy = []
 
-    screen, reward, action, terminal = env.new_random_game()
+    screen, reward, action, terminal = env.new_game()
 
     # init state
     for _ in range(config.history_length):
@@ -163,7 +167,7 @@ def train(sess, config):
     for step in tqdm(range(start_step, config.max_step), ncols=70, initial=start_step):
 
         if step == config.learn_start:
-            num_game, update_count, ep_reward = 0, 0, 0.
+            num_game, update_count = 0, 0
             total_reward, total_loss, total_q_value = 0., 0., 0.
             ep_rewards, actions = [], []
 
@@ -196,23 +200,24 @@ def train(sess, config):
 
         # Pongの場合
         apply_action = action
-        if int(apply_action != 0):
-            apply_action += 1
+        # if int(apply_action != 0):
+        #     apply_action += 1
 
         # Observe
         screen, reward, terminal = env.act(apply_action, is_training=True)
         history.add(screen)
-        subgoal_hash = imagehash.phash(subgoal[current_index])
-        real_hash = imagehash.phash(Image.fromarray(screen))
-#         if subgoal_hash - real_hash <= 7:
-#             ex_reward = 0.1
-#         else:
-#             ex_reward = 0
+        if config.subgoal:
+            subgoal_hash = imagehash.phash(subgoal[current_index])
+            real_hash = imagehash.phash(Image.fromarray(screen))
+            if subgoal_hash - real_hash <= 7:
+                ex_reward = 0.1
+            else:
+                ex_reward = 0
 
-        if current_index < episode_step // 10:
-            current_index += 1
-            if len(subgoal) == current_index:
-                current_index -= 1
+            if current_index < episode_step // 10:
+                current_index += 1
+                if len(subgoal) == current_index:
+                    current_index -= 1
 
         reward = max(config.min_reward, min(config.max_reward, reward))
         memory.add(screen, reward, action, terminal)
@@ -308,17 +313,20 @@ def train(sess, config):
                 agent.updated_target_q_network()
 
         # reinit
+        ep_reward += reward
         if terminal:
-            screen, reward, action, terminal = env.new_random_game()
+            # screen, reward, action, terminal = env.new_random_game()
+            screen, reward, action, terminal = env.new_game()
 
             num_game += 1
             ep_rewards.append(ep_reward)
             ep_reward = 0.
-            episode_step = 0
-            current_index = 0
+            if config.subgoal:
+                episode_step = 0
+                current_index = 0
         else:
-            ep_reward += reward
-            episode_step += 1
+            if config.subgoal:
+                episode_step += 1
 
         total_reward += reward
 
@@ -343,8 +351,9 @@ def train(sess, config):
             if step % config._test_step == config._test_step - 1:
 
                 # plot
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
+                if config.gats == True:
+                    writer.add_summary(gdm.summary, step)
+                    writer.add_summary(disc_summary, step)
 
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
@@ -411,7 +420,6 @@ def train(sess, config):
                 total_loss = 0.
                 total_q_value = 0.
                 update_count = 0
-                ep_reward = 0.
                 ep_rewards = []
                 actions = []
 

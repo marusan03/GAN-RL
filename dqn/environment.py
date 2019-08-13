@@ -61,10 +61,9 @@ class Environment(object):
 
     @ property
     def screen(self):
-        # return imresize(rgb2gray(self._screen), self.dims)
+        return imresize(rgb2gray(self._screen), self.dims)
         img = np.reshape(self._screen, [210, 160, 3]).astype(np.float32)
-        img = img[:, :, 0] * 0.299 + img[:, :, 1] * \
-            0.587 + img[:, :, 2] * 0.114
+        img = rgb2gray(img)
         img = Image.fromarray(img)
         resized_screen = img.resize((84, 110), Image.BILINEAR)
         resized_screen = np.array(resized_screen)

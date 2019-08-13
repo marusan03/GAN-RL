@@ -60,7 +60,7 @@ class ReplayMemory:
         self.cnn_format = config.cnn_format
         self.memory_size = config.memory_size
         self.actions = np.empty(self.memory_size, dtype=np.uint8)
-        self.rewards = np.empty(self.memory_size, dtype=np.integer)
+        self.rewards = np.empty(self.memory_size, dtype=np.float32)
         self.screens = np.empty(
             (self.memory_size, config.screen_height, config.screen_width), dtype=np.uint8)
         self.terminals = np.empty(self.memory_size, dtype=np.bool)
@@ -105,7 +105,7 @@ class ReplayMemory:
         if (self.current + 1) >= self.memory_size and len(self.nonzero_rewards):
             self.overwrite_index = 0
 
-        if (reward != 0):
+        if (int(reward) != 0):
             if self.overwrite_index == None:
                 self.nonzero_rewards.append(self.current)
             else:

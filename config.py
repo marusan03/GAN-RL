@@ -2,7 +2,8 @@ class AgentConfig(object):
     scale = 10000
     display = False
 
-    max_step = 5000 * scale
+    # max_step = 5000 * scale
+    max_step = 1000 * scale
     memory_size = 100 * scale
 
     batch_size = 32
@@ -22,6 +23,7 @@ class AgentConfig(object):
     history_length = 4
     train_frequency = 4
     learn_start = 5. * scale
+    # learn_start = scale // 2
 
     min_delta = -1
     max_delta = 1
@@ -30,8 +32,9 @@ class AgentConfig(object):
     dueling = False
 
     _test_step = 5 * scale
+    # _test_step = scale // 2
     _save_step = _test_step * 10
-
+    # _save_step = _test_step * 10 * 5
     num_actions = 18
 
     is_train = None
