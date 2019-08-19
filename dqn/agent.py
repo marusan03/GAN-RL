@@ -107,15 +107,15 @@ class Agent():
         q_acted = tf.reduce_sum(
             self.q_value * action_one_hot, axis=1, name='q_acted')
 
-        # delta = self.target_q_t - q_acted
+        delta = self.target_q_t - q_acted
 
-        # def clipped_error(x):
-        #     # Huber loss
-        #     return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
+        def clipped_error(x):
+            # Huber loss
+            return tf.where(tf.abs(x) < 1.0, 0.5 * tf.square(x), tf.abs(x) - 0.5)
 
         # If you use RMSpropGraves, this code is tf.reduce_sum(). But it is not Implemented.
-        # loss = tf.reduce_mean(clipped_error(delta), name='loss')
-        loss = tf.reduce_mean(tf.losses.huber_loss(self.target_q_t, q_acted, reduction=tf.losses.Reduction.NONE), name='loss')
+        loss = tf.reduce_mean(clipped_error(delta), name='loss')
+        # loss = tf.reduce_mean(tf.losses.huber_loss(self.target_q_t, q_acted, reduction=tf.losses.Reduction.NONE), name='loss')
 
         dqn_summary = tf.summary.scalar('dqn_loss', loss)
 
@@ -130,7 +130,7 @@ class Agent():
                                           staircase=True))
 
         dqn_op = tf.train.RMSPropOptimizer(
-            learning_rate_op, decay=0.95, momentum=0.0, epsilon=0.00001, centered=True).minimize(loss)
+            learning_rate_op, decay=0.90, momentum=0.95, epsilon=0.01, centered=False).minimize(loss)
         return dqn_op, loss, dqn_summary
 
     def build_model(self, state):
