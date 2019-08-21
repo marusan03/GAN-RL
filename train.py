@@ -100,7 +100,8 @@ def train(sess, config):
         rp_train_frequency = 4
         gdm_train_frequency = 4
         gdm = GDM(sess, config, num_actions=config.num_actions)
-        rp = RP(sess, config, num_actions=config.num_actions)
+        # rp = RP(sess, config, num_actions=config.num_actions)
+        rp = None
         leaves_size = config.num_actions**config.lookahead
         if config.dyna == True:
             gan_memory = GANReplayMemory(config)
@@ -216,17 +217,21 @@ def train(sess, config):
             if subgoal_hash - real_hash <= 7:
                 ex_reward = 0.5
             else:
-                ex_reward = 0
+                ex_reward = 0.
 
             if subgoal_hash - real_hash <= 1:
                 current_index += 1
-            elif current_index < episode_step // 10:
+                ex_reward = 1.0
+            elif current_index < episode_step // 333:
                 current_index += 1
                 if len(subgoal) == current_index:
                     current_index -= 1
 
-        reward = max(config.min_reward, min(config.max_reward, reward))
-        memory.add(screen, int(reward), action, terminal)
+            if not -0.01 == reward:
+                ex_reward += reward
+
+        ex_reward = max(config.min_reward, min(config.max_reward, ex_reward))
+        memory.add(screen, ex_reward, action, terminal)
         # reward = max(config.min_reward, min(config.max_reward, reward))
         # history.add(screen)
         # memory.add(screen, reward, action, terminal)
@@ -242,27 +247,27 @@ def train(sess, config):
 
         # Train
         if step > config.gan_learn_start and config.gats:
-            if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
-                obs, act, rew = memory.reward_sample(
-                    config.rp_batch_size)
-                # obs, act, rew = memory.reward_sample2(
-                #     config.rp_batch_size, config.lookahead)
-                reward_obs, reward_act, reward_rew = memory.reward_sample(
-                    config.nonzero_batch_size, nonzero=True)
-                # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
-                #     config.rp_batch_size, config.lookahead)
-                obs_batch = norm_frame(
-                    np.concatenate((obs, reward_obs), axis=0))
-                act_batch = np.concatenate((act, reward_act), axis=0)
-                rew_batch = np.concatenate((rew, reward_rew), axis=0)
-                reward_label = rew_batch + 1
+            # if step % rp_train_frequency == 0 and memory.can_sample(config.rp_batch_size):
+            #     obs, act, rew = memory.reward_sample(
+            #         config.rp_batch_size)
+            #     # obs, act, rew = memory.reward_sample2(
+            #     #     config.rp_batch_size, config.lookahead)
+            #     reward_obs, reward_act, reward_rew = memory.reward_sample(
+            #         config.nonzero_batch_size, nonzero=True)
+            #     # reward_obs, reward_act, reward_rew = memory.nonzero_reward_sample(
+            #     #     config.rp_batch_size, config.lookahead)
+            #     obs_batch = norm_frame(
+            #         np.concatenate((obs, reward_obs), axis=0))
+            #     act_batch = np.concatenate((act, reward_act), axis=0)
+            #     rew_batch = np.concatenate((rew, reward_rew), axis=0)
+            #     reward_label = rew_batch + 1
 
-                trajectories = gdm.get_state(
-                    obs_batch, act_batch[:, :-1])
+            #     trajectories = gdm.get_state(
+            #         obs_batch, act_batch[:, :-1])
 
-                rp_summary = rp.train(
-                    trajectories, act_batch, reward_label)
-                writer.add_summary(rp_summary, step)
+            #     rp_summary = rp.train(
+            #         trajectories, act_batch, reward_label)
+            #     writer.add_summary(rp_summary, step)
 
             if step % gdm_train_frequency == 0 and memory.can_sample(config.gan_batch_size):
                 state_batch, action_batch, next_state_batch = memory.GAN_sample()
@@ -384,12 +389,12 @@ def train(sess, config):
                     max_avg_ep_reward = max(max_avg_ep_reward, avg_ep_reward)
 
                 if step >= config.gan_dqn_learn_start:
-                    if len(rp_accuracy) > 0:
+                    try:
                         rp_accuracy = np.mean(rp_accuracy)
                         rp_plus_accuracy = np.mean(rp_plus_accuracy)
                         rp_minus_accuracy = np.mean(rp_minus_accuracy)
                         nonzero_rp_accuracy = np.mean(nonzero_rp_accuracy)
-                    else:
+                    except:
                         rp_accuracy = 0
                         rp_plus_accuracy = 0
                         rp_minus_accuracy = 0
@@ -468,7 +473,9 @@ def MCTS_planning(gdm, rp, agent, state, leaves_size, tree_base, config, explora
             0, config.num_actions, leaves_act_max.shape)
     reward_actions = np.concatenate(
         (tree_base, np.expand_dims(leaves_act_max, axis=1)), axis=1)
-    predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
+    # predicted_cum_rew = rp.get_reward(trajectories, reward_actions)
+    predicted_cum_rew = np.zeros([trajectories.shape[0], 3*(config.lookahead+1)])
+    predicted_cum_rew[:, 1::3] = 1.
     predicted_cum_return = np.zeros(leaves_size)
     for i in range(config.lookahead):
         predicted_cum_return = config.discount * predicted_cum_return + \
