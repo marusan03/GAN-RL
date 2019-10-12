@@ -61,7 +61,7 @@ def train(sess, config):
             'rp.rp_plus_accuracy',
             'rp.rp_minus_accuracy',
             'rp.nonzero_rp_accuracy'
-            ]
+        ]
 
         summary_placeholders = {}
         summary_ops = {}
@@ -87,14 +87,14 @@ def train(sess, config):
 
     agent = Agent(sess, config, num_actions=config.num_actions)
 
-    if config.gats == True:
+    if config.gats:
         lookahead = config.lookahead
         rp_train_frequency = 4
         gdm_train_frequency = 4
         gdm = GDM(sess, config, num_actions=config.num_actions)
         rp = RP(sess, config, num_actions=config.num_actions)
         leaves_size = config.num_actions**config.lookahead
-        if config.dyna == True:
+        if config.dyna:
             gan_memory = GANReplayMemory(config)
         else:
             gan_memory = None
@@ -184,7 +184,7 @@ def train(sess, config):
         history.add(screen)
         memory.add(screen, reward, action, terminal)
 
-        if MCTS_FLAG == True:
+        if MCTS_FLAG:
             rp_accuracy.append(int(predicted_reward == reward))
             if reward != 0:
                 nonzero_rp_accuracy.append(int(predicted_reward == reward))
@@ -234,7 +234,7 @@ def train(sess, config):
                 #     config.batch_size, config.lookahead)
                 s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch = memory.sample()
                 s_t, s_t_plus_1 = norm_frame(s_t), norm_frame(s_t_plus_1)
-                if config.gats == True and config.dyna == True:
+                if config.gats and config.dyna:
                     if step > config.gan_dqn_learn_start and gan_memory.can_sample(config.batch_size):
                         gan_obs_batch, gan_act_batch, gan_rew_batch, gan_terminal_batch = gan_memory.sample()
                         # gan_obs_batch, gan_act_batch, gan_rew_batch = gan_memory.sample(
@@ -258,7 +258,8 @@ def train(sess, config):
                         terminal_batch = np.concatenate(
                             [terminal_batch, gan_terminal_batch], axis=0)
 
-                s_t, s_t_plus_1 = norm_frame_Q(unnorm_frame(s_t)), norm_frame_Q(unnorm_frame(s_t_plus_1))
+                s_t, s_t_plus_1 = norm_frame_Q(unnorm_frame(
+                    s_t)), norm_frame_Q(unnorm_frame(s_t_plus_1))
 
                 q_t, loss, dqn_summary = agent.train(
                     s_t, act_batch, rew_batch, s_t_plus_1, terminal_batch, step)
@@ -296,7 +297,7 @@ def train(sess, config):
                 gdm_train_frequency = 24
 
         # rolloutを行い画像を保存
-        if config.gats == True and step % config._test_step == config._test_step - 1:
+        if config.gats and step % config._test_step == config._test_step - 1:
             rollout_image(config, image_dir, gdm, memory, step+1, 16)
 
         # calcurate infometion
@@ -304,8 +305,9 @@ def train(sess, config):
             if step % config._test_step == config._test_step - 1:
 
                 # plot
-                writer.add_summary(gdm.summary, step)
-                writer.add_summary(disc_summary, step)
+                if config.gats:
+                    writer.add_summary(gdm.summary, step)
+                    writer.add_summary(disc_summary, step)
 
                 avg_reward = total_reward / config._test_step
                 avg_loss = total_loss / update_count
@@ -442,7 +444,7 @@ def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
         states[:4], axis=0), actions, num_rollout)
     action_label = [str(action) for action in actions]
     action_label = '.'.join(action_label)
-    if config.gif == True:
+    if config.gif:
         gif_images = np.concatenate([states, images], axis=1)
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
                      for image in gif_images]
