@@ -9,7 +9,6 @@ import tensorflow as tf
 import numpy as np
 
 
-
 pp = pprint.PrettyPrinter().pprint
 flags = tf.app.flags
 
@@ -77,7 +76,7 @@ def main(_):
         if FLAGS.use_gpu:
             config.cnn_format = 'NCHW'
 
-        pp(config.__dict__)
+        pp(vars(config))
 
         if FLAGS.is_train:
             train(sess, config)
