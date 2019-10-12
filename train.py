@@ -80,8 +80,8 @@ def train(sess, config):
             summary_ops[tag] = tf.summary.histogram(
                 tag, summary_placeholders[tag])
 
-    # config.num_actions = env.action_size
-    config.num_actions = 3
+    config.num_actions = env.action_size
+    # config.num_actions = 3
 
     exploration = LinearSchedule(config.epsilon_end_t, config.epsilon_end)
 
@@ -449,7 +449,7 @@ def rollout_image(config, image_dir, gdm, memory, step, num_rollout=4):
         pil_image = [Image.fromarray(np.uint8(unnorm_frame(image))).convert(mode='L')
                      for image in gif_images]
         pil_image[0].save(
-            (image_dir + 'rollout_{}_{}.gif').format(step, action_label), save_all=True, append_images=pil_image[1:], optimize=True, duration=100, loop=0)
+            (image_dir + f'rollout_{step}_{action_label}.gif'), save_all=True, append_images=pil_image[1:], optimize=True, duration=100, loop=0)
     states = np.hstack(states)
     images = np.hstack(images)
     states = np.vstack([states, images])

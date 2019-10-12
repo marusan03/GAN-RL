@@ -1,8 +1,6 @@
 import os
-import shutil
 import random
 from tqdm import tqdm
-from PIL import Image
 from gym import wrappers
 
 import tensorflow as tf
@@ -12,7 +10,6 @@ from dqn.environment import GymEnvironment
 from dqn.history import History
 from dqn.agent import Agent
 from gdm import GDM
-from dqn.utils import LinearSchedule
 
 
 def norm_frame(obs):
@@ -34,7 +31,8 @@ def play(sess, config):
     env = GymEnvironment(config)
     if not os.path.exists('./video/'):
         os.makedirs('./video/')
-    env = wrappers.Monitor(env, './video/', video_callable=(lambda ep: ep % 1 == 0))
+    env = wrappers.Monitor(
+        env, './video/', video_callable=(lambda ep: ep % 1 == 0))
 
     epsilon = 0.1
     gan_epsilon = 0.01
@@ -43,10 +41,10 @@ def play(sess, config):
         config.env_name, config.lookahead, config.gats)
     checkpoint_dir = os.path.join(log_dir, 'checkpoints/')
 
-    # config.num_actions = env.action_size
-    config.num_actions = 3
+    config.num_actions = env.action_size
+    # config.num_actions = 3
 
-    if config.gats == True:
+    if config.gats:
         lookahead = config.lookahead
         gdm = GDM(sess, config, num_actions=config.num_actions)
         leaves_size = config.num_actions**config.lookahead
