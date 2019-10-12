@@ -18,7 +18,7 @@ class GANReplayMemory(object):
         self.states = np.empty(
             (self.memory_size, self.history_length) + self.dims, dtype=np.uint8)
         self.actions = np.empty([self.memory_size], dtype=np.uint8)
-        self.rewards = np.empty([self.memory_size], dtype=np.integer)
+        self.rewards = np.empty([self.memory_size], dtype=np.float32)
         self.terminals = np.full([self.batch_size], False)
         # pre-allocate prestates for minibatch
         self.prestates = np.empty(
