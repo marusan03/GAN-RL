@@ -175,8 +175,8 @@ def train(sess, config):
 
         # GATS用?
         apply_action = action
-        if int(apply_action != 0):
-            apply_action += 1
+        # if int(apply_action != 0):
+        #     apply_action += 1
 
         # Observe
         screen, reward, terminal = env.act(apply_action, is_training=True)
