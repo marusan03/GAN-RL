@@ -7,6 +7,7 @@
 ![demo4](https://github.com/e155763/GAN-RL/blob/master/gif/demo4.gif)
 ![demo5](https://github.com/e155763/GAN-RL/blob/master/gif/demo5.gif)
 ![demo6](https://github.com/e155763/GAN-RL/blob/master/gif/demo6.gif)
+
 ↑実際に起こった状態  
 ↓GANが生成した状態
 
