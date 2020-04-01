@@ -7,6 +7,8 @@
 ![demo4](https://github.com/e155763/GAN-RL/blob/master/gif/demo4.gif)
 ![demo5](https://github.com/e155763/GAN-RL/blob/master/gif/demo5.gif)
 ![demo6](https://github.com/e155763/GAN-RL/blob/master/gif/demo6.gif)
+↑実際に起こった状態  
+↓GANが生成した状態
 
 # USAGE
 
@@ -15,9 +17,7 @@ python main.py --env_name=PongNoFrameskip-v4 --is_train=True --gats=True --looka
 ```
 
 # PROGRESS
-- GATS完成?
--
-
+- GATS完成
 - extra
     - できればA3Cや他の深層強化学習と組み合わせたい
     - RPの改善
